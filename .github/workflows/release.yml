@@ -71,6 +71,12 @@ jobs:
             gladys-assistant-integration.json > "$tmp"
           mv "$tmp" gladys-assistant-integration.json
 
+          # jq reprints the WHOLE file in its own style (one array element per
+          # line), not just the two keys above — which leaves the manifest
+          # unformatted and turns `npm run format:check` red on the very next
+          # push. Hand it back to Prettier so the release commit stays canonical.
+          npx --yes prettier@3 --write gladys-assistant-integration.json
+
           echo "version=${new_version}" >> "$GITHUB_OUTPUT"
 
       # Note: if the branch you release from is protected against direct pushes,
