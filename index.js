@@ -219,7 +219,7 @@ async function publishStates() {
     return;
   }
   const snapshot = monitor.snapshot();
-  const published = await publisher.publish(buildAllStates(gladys, snapshot));
+  const published = await publisher.publish(buildAllStates(gladys, snapshot, config));
   if (published > 0) {
     logger.debug(
       `${snapshot.summary.silent}/${snapshot.summary.monitored} device(s) silent, ${published} state(s) published`,

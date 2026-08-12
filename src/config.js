@@ -35,6 +35,13 @@ export const DEFAULT_CONFIG = {
   // apart; empty keeps the raw friendly name.
   device_name_suffix: '(monitor)',
 
+  // What the `Silent device names` text feature reads when nothing is silent.
+  // It spends most of its life in that state, so it has to say so in plain
+  // words rather than with a placeholder — and it can never be empty (see
+  // `normalizeConfig`). English by default, because a Gladys manifest has no
+  // way to declare a per-language default; the field is there to translate it.
+  no_silent_devices_text: 'No silent device',
+
   // --- Advanced -------------------------------------------------------------
   ignored_devices: '', // friendly names and/or IEEE addresses, comma separated
   monitor_disabled_devices: false, // devices flagged `disabled` in Zigbee2MQTT
@@ -68,6 +75,11 @@ export function normalizeConfig(raw = {}) {
     ),
     custom_timeouts: String(raw.custom_timeouts ?? DEFAULT_CONFIG.custom_timeouts),
     device_name_suffix: String(raw.device_name_suffix ?? DEFAULT_CONFIG.device_name_suffix).trim(),
+    // An emptied field falls back to the default on purpose: Gladys dispatches a
+    // text state on `if (event.text)`, so an empty text is accepted and then
+    // dropped, and the feature would read "no value recorded" forever.
+    no_silent_devices_text:
+      String(raw.no_silent_devices_text ?? '').trim() || DEFAULT_CONFIG.no_silent_devices_text,
     ignored_devices: String(raw.ignored_devices ?? DEFAULT_CONFIG.ignored_devices),
     monitor_disabled_devices: raw.monitor_disabled_devices === true,
     check_interval_seconds: toPositiveNumber(

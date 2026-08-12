@@ -6,7 +6,6 @@ import {
   parseBridgeEvent,
   parseBridgeState,
   parseLastSeen,
-  parseLinkQuality,
   parsePayload,
 } from '../src/z2m/payloads.js';
 import { BRIDGE_DEVICES_PAYLOAD } from './helpers/z2mFixtures.js';
@@ -96,12 +95,4 @@ test('parseLastSeen returns undefined when the field is absent or unusable', () 
   assert.equal(parseLastSeen({ last_seen: 'not a date' }, now), undefined);
   assert.equal(parseLastSeen({ last_seen: 0 }, now), undefined);
   assert.equal(parseLastSeen('a string', now), undefined);
-});
-
-test('parseLinkQuality only accepts a plausible LQI', () => {
-  assert.equal(parseLinkQuality({ linkquality: 120 }), 120);
-  assert.equal(parseLinkQuality({ linkquality: '80' }), 80);
-  assert.equal(parseLinkQuality({ linkquality: 300 }), undefined);
-  assert.equal(parseLinkQuality({ linkquality: -1 }), undefined);
-  assert.equal(parseLinkQuality({}), undefined);
 });

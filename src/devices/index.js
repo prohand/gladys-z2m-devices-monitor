@@ -52,11 +52,12 @@ export function buildDiscoveredDevices(gladys, snapshot, config) {
  * Build every candidate state of a snapshot, ready for the `StatePublisher`.
  * @param {import('@gladysassistant/integration-sdk').GladysIntegration} gladys - The SDK instance.
  * @param {object} snapshot - A `DevicesMonitor.snapshot()` result.
+ * @param {Record<string, unknown>} [config] - Normalized configuration (it carries the "nothing is silent" text).
  * @returns {Array<{device_feature_external_id: string, state: unknown, minIntervalMs?: number}>} Candidate states.
  */
-export function buildAllStates(gladys, snapshot) {
+export function buildAllStates(gladys, snapshot, config = {}) {
   return [
-    ...buildSummaryStates(gladys, snapshot.summary),
+    ...buildSummaryStates(gladys, snapshot.summary, config),
     ...snapshot.devices
       .filter((device) => device.monitored)
       .flatMap((device) => buildZigbeeDeviceStates(gladys, device)),

@@ -5,11 +5,13 @@
 // Zigbee2MQTT publishes on `<base_topic>/bridge/devices`, so pairing a new
 // sensor makes it appear in Gladys without touching this file.
 //
-// Each one carries the three things you want when a sensor goes quiet:
-//   - "Alive"          the verdict, and the feature to build a scene on;
-//   - "Silence"        how long it has been quiet, to size the thresholds;
-//   - "Link quality"   the LQI of its last message — a device whose LQI has been
-//                      collapsing for a week is usually the next one to die.
+// Each one carries the two things you want when a sensor goes quiet:
+//   - "Alive"     the verdict, and the feature to build a scene on;
+//   - "Silence"   how long it has been quiet, to size the thresholds.
+//
+// The link quality (LQI) is deliberately NOT published: Gladys already exposes
+// it through its own Zigbee2MQTT integration, and a second copy of the same
+// number only makes the device and scene pickers harder to read.
 // -----------------------------------------------------------------------------
 
 import {
@@ -23,16 +25,15 @@ export const ZIGBEE_DEVICE_TYPE = 'z2m-device';
 export const ZIGBEE_FEATURE = {
   ALIVE: 'alive',
   SILENCE: 'silence',
-  LINK_QUALITY: 'link-quality',
 };
 
 // A silence longer than a year says nothing more than "a very long time", and
 // the feature has to declare a bounded range.
 const MAX_SILENCE_MINUTES = 525_600;
 
-// "Silence" grows by one every minute and the link quality wobbles on every
-// report: both are gauges, refreshed at most this often so a large network does
-// not spend its whole rate-limit budget on them (see `StatePublisher`).
+// "Silence" grows by one every minute: a gauge, refreshed at most this often so
+// a large network does not spend its whole rate-limit budget on it (see
+// `StatePublisher`).
 const GAUGE_MIN_INTERVAL_MS = 5 * 60 * 1000;
 
 /**
@@ -110,17 +111,6 @@ export function buildZigbeeDevice(gladys, device, config) {
         // The user can switch it on from the device screen if they want it.
         keep_history: false,
       },
-      {
-        name: 'Link quality',
-        external_id: ids.feature(ZIGBEE_FEATURE.LINK_QUALITY),
-        category: DEVICE_FEATURE_CATEGORIES.SIGNAL,
-        type: DEVICE_FEATURE_TYPES.SIGNAL.QUALITY,
-        min: 0,
-        max: 255,
-        read_only: true,
-        has_feedback: false,
-        keep_history: false,
-      },
     ],
   };
 }
@@ -129,7 +119,7 @@ export function buildZigbeeDevice(gladys, device, config) {
  * Build the states of one watched Zigbee device.
  *
  * `Alive` carries no `minIntervalMs`: it is the alert, so every flip goes out on
- * the tick that sees it. The two gauges are throttled, except the moment a
+ * the tick that sees it. The silence gauge is throttled, except the moment a
  * device breaks its silence — a counter falling back to zero is the good news
  * worth publishing straight away.
  * @param {import('@gladysassistant/integration-sdk').GladysIntegration} gladys - The SDK instance.
@@ -138,7 +128,7 @@ export function buildZigbeeDevice(gladys, device, config) {
  */
 export function buildZigbeeDeviceStates(gladys, device) {
   const ids = zigbeeExternalIds(gladys, device.ieeeAddress);
-  const states = [
+  return [
     {
       device_feature_external_id: ids.feature(ZIGBEE_FEATURE.ALIVE),
       state: device.alive ? 1 : 0,
@@ -149,14 +139,4 @@ export function buildZigbeeDeviceStates(gladys, device) {
       minIntervalMs: device.silenceMinutes === 0 ? 0 : GAUGE_MIN_INTERVAL_MS,
     },
   ];
-
-  if (device.linkQuality !== null && device.linkQuality !== undefined) {
-    states.push({
-      device_feature_external_id: ids.feature(ZIGBEE_FEATURE.LINK_QUALITY),
-      state: device.linkQuality,
-      minIntervalMs: GAUGE_MIN_INTERVAL_MS,
-    });
-  }
-
-  return states;
 }

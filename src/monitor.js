@@ -37,7 +37,7 @@ export class DevicesMonitor {
     this.devicesByIeee = new Map();
     /** @type {Map<string, string>} Friendly name -> IEEE address. */
     this.ieeeByFriendlyName = new Map();
-    /** @type {Map<string, {lastSeen: number|null, linkQuality: number|null, availability: string|null}>} */
+    /** @type {Map<string, {lastSeen: number|null, availability: string|null}>} */
     this.activityByIeee = new Map();
     /**
      * Activity received for a friendly name we cannot resolve yet: the device
@@ -93,25 +93,11 @@ export class DevicesMonitor {
    * @param {string} friendlyName - Friendly name (or IEEE address) read from the topic.
    * @param {object} [details] - Details.
    * @param {number} [details.at] - When the device spoke, in milliseconds. Defaults to now.
-   * @param {number} [details.linkQuality] - Link quality (LQI) reported with the message.
    */
-  recordActivity(friendlyName, { at, linkQuality } = {}) {
+  recordActivity(friendlyName, { at } = {}) {
     this.mergeActivity(friendlyName, {
       lastSeen: Number.isFinite(at) ? at : this.now(),
-      linkQuality: Number.isFinite(linkQuality) ? linkQuality : undefined,
     });
-  }
-
-  /**
-   * Record a link quality without touching the last-seen timestamp — used for
-   * RETAINED reports, whose arrival proves nothing about when the device spoke.
-   * @param {string} friendlyName - Friendly name (or IEEE address).
-   * @param {number} linkQuality - Link quality (LQI).
-   */
-  recordLinkQuality(friendlyName, linkQuality) {
-    if (Number.isFinite(linkQuality)) {
-      this.mergeActivity(friendlyName, { linkQuality });
-    }
   }
 
   /**
@@ -206,7 +192,6 @@ export class DevicesMonitor {
         neverSeen: activity.lastSeen === null,
         silenceMinutes,
         alive: silenceMinutes <= timeoutMinutes,
-        linkQuality: activity.linkQuality,
         availability: activity.availability,
       });
     }
@@ -289,7 +274,7 @@ export class DevicesMonitor {
    * Merge a partial activity record, buffering it when the device is not known
    * yet (the inventory has not arrived, or the device was just paired).
    * @param {string} nameOrIeee - Friendly name or IEEE address.
-   * @param {object} update - Partial `{ lastSeen, linkQuality, availability }`.
+   * @param {object} update - Partial `{ lastSeen, availability }`.
    */
   mergeActivity(nameOrIeee, update) {
     const ieee = this.resolveIeee(nameOrIeee);
@@ -301,9 +286,6 @@ export class DevicesMonitor {
       // Keep the most recent proof of life: a retained report carrying an old
       // `last_seen` must never push the timestamp backwards.
       current.lastSeen = Math.max(current.lastSeen ?? 0, update.lastSeen);
-    }
-    if (update.linkQuality !== undefined) {
-      current.linkQuality = update.linkQuality;
     }
     if (update.availability !== undefined) {
       current.availability = update.availability;
@@ -326,8 +308,8 @@ export function isBatteryPowered(device) {
 
 /**
  * A blank activity record.
- * @returns {{lastSeen: null, linkQuality: null, availability: null}} Empty record.
+ * @returns {{lastSeen: null, availability: null}} Empty record.
  */
 function emptyActivity() {
-  return { lastSeen: null, linkQuality: null, availability: null };
+  return { lastSeen: null, availability: null };
 }

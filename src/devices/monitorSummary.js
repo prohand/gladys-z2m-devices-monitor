@@ -14,6 +14,7 @@
 // -----------------------------------------------------------------------------
 
 import { DEVICE_FEATURE_CATEGORIES, DEVICE_FEATURE_TYPES } from '@gladysassistant/integration-sdk';
+import { DEFAULT_CONFIG } from '../config.js';
 
 export const SUMMARY_DEVICE_TYPE = 'z2m-monitor';
 
@@ -33,12 +34,16 @@ export const SUMMARY_FEATURE = {
 const MAX_NAMES_IN_TEXT = 10;
 const MAX_TEXT_LENGTH = 255;
 
-// What the text feature reads when nothing is silent — and it CANNOT be the
-// empty string: the Gladys core dispatches a text state on `if (event.text)`,
-// so an empty one falls through to the numeric branch, which has no number to
-// save. The state is accepted, then lost, and the feature reads "no value
-// recorded" forever — precisely in the situation it spends its life in.
-export const NO_SILENT_DEVICES_TEXT = '-';
+// What the text feature reads when nothing is silent. It is a full sentence,
+// not a placeholder: this is the value the feature displays almost all the time,
+// and a lone dash reads like a feature that never received anything.
+//
+// It CANNOT be the empty string either: the Gladys core dispatches a text state
+// on `if (event.text)`, so an empty one falls through to the numeric branch,
+// which has no number to save. The state is accepted, then lost, and the
+// feature reads "no value recorded" forever — precisely in the situation it
+// spends its life in. `normalizeConfig` guarantees a non-empty value.
+export const NO_SILENT_DEVICES_TEXT = DEFAULT_CONFIG.no_silent_devices_text;
 
 /**
  * External ids of the summary device.
@@ -126,9 +131,10 @@ export function buildSummaryDevice(gladys) {
  * Build the states of the summary device.
  * @param {import('@gladysassistant/integration-sdk').GladysIntegration} gladys - The SDK instance.
  * @param {object} summary - `summary` block of a monitor snapshot.
+ * @param {Record<string, unknown>} [config] - Normalized configuration (it carries the "nothing is silent" text).
  * @returns {Array<{device_feature_external_id: string, state: unknown}>} Candidate states.
  */
-export function buildSummaryStates(gladys, summary) {
+export function buildSummaryStates(gladys, summary, config = {}) {
   const ids = summaryExternalIds(gladys);
   const states = [
     {
@@ -148,7 +154,7 @@ export function buildSummaryStates(gladys, summary) {
       // a numeric `state` OR a string `text`, and rejects the whole batch when
       // one state carries neither.
       device_feature_external_id: ids.feature(SUMMARY_FEATURE.SILENT_NAMES),
-      text: formatSilentNames(summary.silentDevices),
+      text: formatSilentNames(summary.silentDevices, config.no_silent_devices_text),
     },
   ];
 
@@ -168,11 +174,12 @@ export function buildSummaryStates(gladys, summary) {
  * Format the silent device names for the text feature, so a scene notification
  * can name them.
  * @param {Array<object>} silentDevices - Silent devices of a monitor snapshot.
+ * @param {string} [noSilentDevicesText] - What to read when nothing is silent.
  * @returns {string} A comma-separated list, truncated to stay readable, never empty.
  */
-export function formatSilentNames(silentDevices = []) {
+export function formatSilentNames(silentDevices = [], noSilentDevicesText) {
   if (silentDevices.length === 0) {
-    return NO_SILENT_DEVICES_TEXT;
+    return String(noSilentDevicesText ?? '').trim() || NO_SILENT_DEVICES_TEXT;
   }
   const names = silentDevices.slice(0, MAX_NAMES_IN_TEXT).map((device) => device.friendlyName);
   const remaining = silentDevices.length - names.length;

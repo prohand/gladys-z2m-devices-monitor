@@ -24,7 +24,6 @@ import {
   parseBridgeEvent,
   parseBridgeState,
   parseLastSeen,
-  parseLinkQuality,
   parsePayload,
 } from './z2m/payloads.js';
 import { parseTopic, TOPIC_KINDS } from './z2m/topics.js';
@@ -98,22 +97,19 @@ export function routeMessage({ monitor, baseTopic, topic, payload, retained = fa
       if (payload.length === 0) {
         break;
       }
-      const body = parsePayload(payload);
-      const linkQuality = parseLinkQuality(body);
-      const lastSeen = parseLastSeen(body, Date.now());
+      const lastSeen = parseLastSeen(parsePayload(payload), Date.now());
 
       if (lastSeen !== undefined) {
         // The device stamped its own report (Zigbee2MQTT `advanced.last_seen`):
         // the most reliable source there is, and the only thing that makes a
         // retained message usable.
-        monitor.recordActivity(friendlyName, { at: lastSeen, linkQuality });
-      } else if (retained) {
-        // The broker replaying the LAST thing the device said. Keep the signal
-        // quality it carries, but not a fresh timestamp we cannot justify.
-        monitor.recordLinkQuality(friendlyName, linkQuality);
-      } else {
-        monitor.recordActivity(friendlyName, { linkQuality });
+        monitor.recordActivity(friendlyName, { at: lastSeen });
+      } else if (!retained) {
+        monitor.recordActivity(friendlyName);
       }
+      // A retained report carrying no `last_seen` is the broker replaying the
+      // LAST thing the device said: it proves nothing about WHEN, so it is
+      // dropped rather than counted as a fresh sign of life.
       break;
     }
 
