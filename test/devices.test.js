@@ -171,15 +171,19 @@ test('device names are suffixed so they never collide with the Zigbee2MQTT ones'
   assert.equal(withNone.find((d) => d.external_id === ids.device).name, 'office plug');
 });
 
-test('the alive feature is a binary presence sensor kept in history', () => {
+test('the alive feature is a binary input kept in history', () => {
   const { monitor } = createMonitor();
   const devices = buildDiscoveredDevices(gladys, monitor.snapshot(), config);
   const plug = devices.find((d) => d.external_id === zigbeeExternalIds(gladys, PLUG_IEEE).device);
   const alive = plug.features.find(
     (f) => f.external_id === zigbeeExternalIds(gladys, PLUG_IEEE).feature(ZIGBEE_FEATURE.ALIVE),
   );
-  assert.equal(alive.category, DEVICE_FEATURE_CATEGORIES.PRESENCE_SENSOR);
-  assert.equal(alive.type, DEVICE_FEATURE_TYPES.SENSOR.BINARY);
+  // NOT `presence-sensor`: the released Gladys front knows that category as
+  // `push` only, and draws a `presence-sensor` + `binary` feature as an empty,
+  // unlabelled tag — the feature silently disappears from the Discovery screen.
+  assert.notEqual(alive.category, DEVICE_FEATURE_CATEGORIES.PRESENCE_SENSOR);
+  assert.equal(alive.category, DEVICE_FEATURE_CATEGORIES.INPUT);
+  assert.equal(alive.type, DEVICE_FEATURE_TYPES.INPUT.BINARY);
   assert.equal(alive.read_only, true);
   assert.equal(alive.keep_history, true, 'the alert history of the device');
 });
