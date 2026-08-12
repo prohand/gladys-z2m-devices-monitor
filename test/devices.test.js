@@ -10,12 +10,14 @@ import {
   buildAllStates,
   buildDiscoveredDevices,
   formatSilentNames,
+  NO_SILENT_DEVICES_TEXT,
   summaryExternalIds,
   SUMMARY_FEATURE,
   zigbeeExternalIds,
   ZIGBEE_FEATURE,
 } from '../src/devices/index.js';
 import { DevicesMonitor } from '../src/monitor.js';
+import { StatePublisher } from '../src/statePublisher.js';
 import { parseBridgeDevices } from '../src/z2m/payloads.js';
 import { createFakeGladys } from './helpers/fakeGladys.js';
 import {
@@ -284,8 +286,66 @@ test('the bridge feature stays unpublished until the bridge speaks', () => {
   assert.equal(stateOf(states, ids.feature(SUMMARY_FEATURE.BRIDGE_ONLINE)), undefined);
 });
 
+// Passing the host API validation is not the same as being STORED: Gladys routes
+// a text state on the truthiness of its `text`, so an empty one is accepted and
+// then dropped, and the feature reads "no value recorded" forever — which is
+// precisely the state of a healthy network, where nothing is silent.
+test('every candidate state is one Gladys actually stores', async () => {
+  const { monitor, clock } = createMonitor({ default_timeout_minutes: 60 });
+  const fake = createFakeGladys();
+  monitor.recordActivity('office plug', { linkQuality: 96 });
+  monitor.recordActivity('kitchen/motion');
+  monitor.setBridgeOnline(true);
+  clock.advanceMinutes(10);
+
+  const states = buildAllStates(fake, monitor.snapshot());
+  await fake.publishStates(states);
+
+  for (const state of states) {
+    assert.ok(
+      fake.stored.has(state.device_feature_external_id),
+      `${state.device_feature_external_id}: published but never stored by Gladys`,
+    );
+  }
+});
+
+// The scenario the user actually lives: the integration publishes its whole
+// network long before anything exists in Gladys, the user then adds one device
+// from the Discovery screen. Everything published so far was dropped, so the
+// publisher has to forget that device to give it a value straight away.
+test('a device created from the Discovery screen gets its states without waiting', async () => {
+  const { monitor, clock } = createMonitor({ default_timeout_minutes: 60 });
+  const fake = createFakeGladys();
+  const publisher = new StatePublisher({ gladys: fake, now: clock.now });
+  monitor.recordActivity('office plug', { linkQuality: 96 });
+
+  // Tick 1: nothing exists in Gladys yet, every state is dropped on arrival.
+  await publisher.publish(buildAllStates(fake, monitor.snapshot()));
+  fake.batches.length = 0;
+
+  // The user presses "Add" on the plug: only its states are published again.
+  const plug = zigbeeExternalIds(fake, PLUG_IEEE);
+  publisher.forgetDevice(plug.device);
+  await publisher.publish(buildAllStates(fake, monitor.snapshot()));
+
+  const republished = fake.batches.flat().map((s) => s.device_feature_external_id);
+  assert.deepEqual(republished, [
+    plug.feature(ZIGBEE_FEATURE.ALIVE),
+    plug.feature(ZIGBEE_FEATURE.SILENCE),
+    plug.feature(ZIGBEE_FEATURE.LINK_QUALITY),
+  ]);
+});
+
+test('the silent names feature never publishes an empty text', () => {
+  const { monitor } = createMonitor();
+  const ids = summaryExternalIds(gladys);
+  const states = buildAllStates(gladys, monitor.snapshot());
+  assert.equal(textOf(states, ids.feature(SUMMARY_FEATURE.SILENT_NAMES)), NO_SILENT_DEVICES_TEXT);
+  assert.ok(NO_SILENT_DEVICES_TEXT.length > 0);
+});
+
 test('formatSilentNames stays readable when half the network is down', () => {
-  assert.equal(formatSilentNames([]), '');
+  assert.equal(formatSilentNames([]), NO_SILENT_DEVICES_TEXT);
   assert.equal(formatSilentNames([{ friendlyName: 'a' }, { friendlyName: 'b' }]), 'a, b');
   const many = Array.from({ length: 14 }, (_, index) => ({ friendlyName: `sensor-${index}` }));
   const text = formatSilentNames(many);

@@ -130,12 +130,12 @@ puis resserrez.
 
 L'appareil **Zigbee2MQTT monitor** expose de son côté :
 
-| Fonctionnalité                            | Description                                       |
-| ----------------------------------------- | ------------------------------------------------- |
-| **Silent devices**                        | Le nombre d'appareils actuellement silencieux.    |
-| **Silent device names**                   | Leurs noms, pour les citer dans une notification. |
-| **Devices alive** / **Devices monitored** | Les compteurs du réseau.                          |
-| **Zigbee2MQTT bridge online**             | L'état du bridge Zigbee2MQTT lui-même.            |
+| Fonctionnalité                            | Description                                                                                   |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **Silent devices**                        | Le nombre d'appareils actuellement silencieux.                                                |
+| **Silent device names**                   | Leurs noms, pour les citer dans une notification. Affiche `-` tant que tout le réseau répond. |
+| **Devices alive** / **Devices monitored** | Les compteurs du réseau.                                                                      |
+| **Zigbee2MQTT bridge online**             | L'état du bridge Zigbee2MQTT lui-même.                                                        |
 
 ## Être alerté : créer la scène
 
@@ -206,3 +206,11 @@ sont typiquement muets pendant des jours s'il ne se passe rien.
 **Tous les appareils passent silencieux en même temps.** Regardez d'abord
 _Zigbee2MQTT bridge online_ : c'est probablement Zigbee2MQTT lui-même, le broker
 ou le coordinateur qui est tombé, pas vos capteurs.
+
+**Un appareil que je viens d'ajouter affiche « Pas de valeur récente ».** Une
+fonctionnalité ne reçoit de valeur qu'une fois l'appareil créé dans Gladys : tout
+ce qui a été publié avant que vous cliquiez sur _Ajouter_ n'est allé nulle part.
+L'intégration republie donc les états d'un appareil dès que Gladys lui signale sa
+création, et la valeur arrive en quelques secondes. Si le bandeau est toujours là,
+**rechargez la page** : le tableau de bord calcule ce bandeau au chargement de ses
+données et ne l'efface pas sur les mises à jour temps réel qui suivent.

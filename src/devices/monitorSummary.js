@@ -33,6 +33,13 @@ export const SUMMARY_FEATURE = {
 const MAX_NAMES_IN_TEXT = 10;
 const MAX_TEXT_LENGTH = 255;
 
+// What the text feature reads when nothing is silent — and it CANNOT be the
+// empty string: the Gladys core dispatches a text state on `if (event.text)`,
+// so an empty one falls through to the numeric branch, which has no number to
+// save. The state is accepted, then lost, and the feature reads "no value
+// recorded" forever — precisely in the situation it spends its life in.
+export const NO_SILENT_DEVICES_TEXT = '-';
+
 /**
  * External ids of the summary device.
  * @param {import('@gladysassistant/integration-sdk').GladysIntegration} gladys - The SDK instance.
@@ -161,11 +168,11 @@ export function buildSummaryStates(gladys, summary) {
  * Format the silent device names for the text feature, so a scene notification
  * can name them.
  * @param {Array<object>} silentDevices - Silent devices of a monitor snapshot.
- * @returns {string} A comma-separated list, truncated to stay readable.
+ * @returns {string} A comma-separated list, truncated to stay readable, never empty.
  */
 export function formatSilentNames(silentDevices = []) {
   if (silentDevices.length === 0) {
-    return '';
+    return NO_SILENT_DEVICES_TEXT;
   }
   const names = silentDevices.slice(0, MAX_NAMES_IN_TEXT).map((device) => device.friendlyName);
   const remaining = silentDevices.length - names.length;

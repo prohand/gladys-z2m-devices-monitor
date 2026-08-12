@@ -31,6 +31,9 @@ import { StatePublisher } from './src/statePublisher.js';
 // Zigbee2MQTT republishes its whole inventory on any change; coalesce the bursts
 // (a re-pairing emits several in a row) into a single discovery publish.
 const DISCOVERY_DEBOUNCE_MS = 2000;
+// Adding devices from the Discovery screen is a series of clicks: coalesce them
+// into one states publish instead of one per device.
+const DEVICE_CREATED_DEBOUNCE_MS = 1000;
 // The last-seen history only has to survive a restart, not every single report.
 const PERSIST_INTERVAL_MS = 5 * 60 * 1000;
 // How long we wait for `bridge/devices` before telling the user the base topic
@@ -48,7 +51,10 @@ const publisher = new StatePublisher({ gladys });
 let mqtt = null;
 let tickTimer = null;
 let discoveryTimer = null;
+let deviceCreatedTimer = null;
 let persistTimer = null;
+/** @type {Set<string>} External ids of the devices the user just created. */
+const createdDevices = new Set();
 let mqttStartedAt = null;
 let lastConnectionStatus = null;
 let historyRestored = false;
@@ -57,6 +63,25 @@ let historyRestored = false;
 gladys.onScanRequest(async () => {
   logger.info('onScanRequest -> publishing discovered devices');
   await publishDevices();
+});
+
+// --- The user added one of the discovered devices ----------------------------
+// Gladys drops the states of a feature that does not exist yet, and this
+// integration publishes its whole network from its very first tick — long
+// before anything is added from the Discovery screen. So everything published
+// until this moment went nowhere, while the publisher considers it delivered:
+// without this handler a device added by the user reads "no recent value" until
+// the periodic refresh comes round, up to half an hour later.
+gladys.onDeviceCreated((device) => {
+  logger.info(`onDeviceCreated -> ${device?.external_id}`);
+  scheduleCreatedDevicePublish(device);
+});
+
+// Same reasoning: Gladys sends this when the user edits the device, and an
+// edited feature can be a brand new one (the SDK republishes the whole device).
+gladys.onDeviceUpdated((device) => {
+  logger.info(`onDeviceUpdated -> ${device?.external_id}`);
+  scheduleCreatedDevicePublish(device);
 });
 
 // --- Manifest actions: buttons in the Configuration screen -------------------
@@ -202,6 +227,28 @@ async function publishStates() {
   }
 }
 
+/**
+ * Republish the states of the devices the user just created, coalescing the
+ * clicks of a Discovery screen session into a single publish.
+ * @param {{external_id?: string} | undefined} device - The device Gladys just created or updated.
+ */
+function scheduleCreatedDevicePublish(device) {
+  if (!device?.external_id) {
+    return;
+  }
+  createdDevices.add(device.external_id);
+  clearTimeout(deviceCreatedTimer);
+  deviceCreatedTimer = setTimeout(() => {
+    for (const externalId of createdDevices) {
+      publisher.forgetDevice(externalId);
+    }
+    createdDevices.clear();
+    publishStates().catch((err) =>
+      logger.error('Failed to publish the states of the new device(s)', err),
+    );
+  }, DEVICE_CREATED_DEBOUNCE_MS);
+}
+
 /** Coalesce the inventory bursts into a single discovery publish. */
 function scheduleDiscoveryPublish() {
   clearTimeout(discoveryTimer);
@@ -278,9 +325,13 @@ function stopTimers() {
   clearInterval(tickTimer);
   clearInterval(persistTimer);
   clearTimeout(discoveryTimer);
+  clearTimeout(deviceCreatedTimer);
   tickTimer = null;
   persistTimer = null;
   discoveryTimer = null;
+  deviceCreatedTimer = null;
+  // Whatever was pending is covered by the full republish of the reconnection.
+  createdDevices.clear();
 }
 
 // --- Graceful shutdown ---------------------------------------------------------

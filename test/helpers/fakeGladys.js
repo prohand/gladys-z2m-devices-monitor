@@ -11,12 +11,15 @@ export function createFakeGladys({ failPublishStates = false } = {}) {
   const batches = [];
   const discovered = [];
   const connectionStatuses = [];
+  /** What Gladys really ends up storing — see `publishStates`. */
+  const stored = new Map();
 
   return {
     published,
     batches,
     discovered,
     connectionStatuses,
+    stored,
 
     externalIds(type, platformId) {
       const device = `ext:z2m-devices-monitor:${type}:${platformId}`;
@@ -57,6 +60,18 @@ export function createFakeGladys({ failPublishStates = false } = {}) {
           state: state.state,
           text: state.text,
         });
+        // A state that passes validation is not a state that gets STORED: the
+        // core routes a text state on the truthiness of `text`, so an empty one
+        // falls through to the numeric branch, which has no number to save. It
+        // is accepted, it is lost, and the feature reads "no value recorded"
+        // forever. Only record here what Gladys would actually keep.
+        if (typeof state.text === 'string') {
+          if (state.text !== '') {
+            stored.set(state.device_feature_external_id, state.text);
+          }
+        } else {
+          stored.set(state.device_feature_external_id, state.state);
+        }
       }
       return { success: true };
     },
