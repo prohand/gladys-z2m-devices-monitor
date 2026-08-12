@@ -128,12 +128,12 @@ value on each device screen, then tighten.
 
 The **Zigbee2MQTT monitor** device exposes:
 
-| Feature                                   | Description                                    |
-| ----------------------------------------- | ---------------------------------------------- |
-| **Silent devices**                        | How many devices are currently silent.         |
-| **Silent device names**                   | Their names, so a notification can quote them. |
-| **Devices alive** / **Devices monitored** | The network counters.                          |
-| **Zigbee2MQTT bridge online**             | The state of the Zigbee2MQTT bridge itself.    |
+| Feature                                   | Description                                                                                    |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **Silent devices**                        | How many devices are currently silent.                                                         |
+| **Silent device names**                   | Their names, so a notification can quote them. Reads `-` while the whole network is answering. |
+| **Devices alive** / **Devices monitored** | The network counters.                                                                          |
+| **Zigbee2MQTT bridge online**             | The state of the Zigbee2MQTT bridge itself.                                                    |
 
 ## Getting alerted: the scene
 
@@ -201,3 +201,11 @@ nothing happens.
 **Every device goes silent at once.** Check _Zigbee2MQTT bridge online_ first: it
 is most likely Zigbee2MQTT itself, the broker or the coordinator that went down,
 not your sensors.
+
+**A device I just added reads "no recent value".** A feature only gets a value
+once the device exists in Gladys, so everything published before you pressed
+_Add_ went nowhere. The integration republishes the states of a device the moment
+Gladys tells it the device was created, so the value lands within a couple of
+seconds. If the badge is still there, **reload the page**: the dashboard computes
+the "no recent value" badge when it loads its data and does not clear it on the
+live updates that follow.

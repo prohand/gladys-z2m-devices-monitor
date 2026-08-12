@@ -122,3 +122,56 @@ test('reset forgets everything so a reconnection pushes the full picture', async
   publisher.reset();
   assert.equal(await publisher.publish([state('a', 1)]), 1);
 });
+
+// Everything published before the user pressed "Add" in the Discovery screen was
+// dropped by Gladys: the feature did not exist yet. Without forgetting it, the
+// new device stays blank until the periodic refresh, half an hour later.
+test('forgetDevice republishes a device the user just created, and nothing else', async () => {
+  const { publisher, gladys } = createPublisher();
+  const plug = 'ext:z2m:device:0xplug';
+  const other = 'ext:z2m:device:0xother';
+  await publisher.publish([
+    state(`${plug}:alive`, 1),
+    state(`${plug}:silence`, 0),
+    state(`${other}:alive`, 1),
+  ]);
+
+  publisher.forgetDevice(plug);
+  const republished = await publisher.publish([
+    state(`${plug}:alive`, 1),
+    state(`${plug}:silence`, 0),
+    state(`${other}:alive`, 1),
+  ]);
+
+  assert.equal(republished, 2);
+  assert.deepEqual(
+    gladys.batches[1].map((published) => published.device_feature_external_id),
+    [`${plug}:alive`, `${plug}:silence`],
+  );
+});
+
+// A device external id is a prefix of its feature ids, but it is also a prefix
+// of the ids of any device whose id merely starts the same way.
+test('forgetDevice leaves a device with a similar external id alone', async () => {
+  const { publisher } = createPublisher();
+  await publisher.publish([
+    state('ext:z2m:device:0x01:alive', 1),
+    state('ext:z2m:device:0x011:alive', 1),
+  ]);
+
+  publisher.forgetDevice('ext:z2m:device:0x01');
+  assert.equal(
+    await publisher.publish([
+      state('ext:z2m:device:0x01:alive', 1),
+      state('ext:z2m:device:0x011:alive', 1),
+    ]),
+    1,
+  );
+});
+
+test('forgetDevice ignores a device published without an external id', async () => {
+  const { publisher } = createPublisher();
+  await publisher.publish([state('a', 1)]);
+  publisher.forgetDevice(undefined);
+  assert.equal(await publisher.publish([state('a', 1)]), 0);
+});

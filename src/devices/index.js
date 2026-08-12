@@ -17,6 +17,7 @@ export {
   summaryExternalIds,
   SUMMARY_FEATURE,
   formatSilentNames,
+  NO_SILENT_DEVICES_TEXT,
 } from './monitorSummary.js';
 export {
   buildZigbeeDevice,

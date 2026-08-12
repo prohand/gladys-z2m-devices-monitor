@@ -51,6 +51,29 @@ export class StatePublisher {
   }
 
   /**
+   * Forget what was published for ONE device.
+   *
+   * Gladys silently drops the states of a feature the user has not created yet
+   * — the integration publishes its whole network from the first tick, long
+   * before anything is added from the Discovery screen. Those states went
+   * nowhere, but the publisher believes them delivered and would stay quiet
+   * until the periodic refresh, leaving a freshly added device blank for half
+   * an hour. Forgetting it on creation is what makes it show a value at once.
+   * @param {string} deviceExternalId - External id of the device (its features are prefixed with it).
+   */
+  forgetDevice(deviceExternalId) {
+    if (!deviceExternalId) {
+      return;
+    }
+    const prefix = `${deviceExternalId}:`;
+    for (const key of this.published.keys()) {
+      if (key === deviceExternalId || key.startsWith(prefix)) {
+        this.published.delete(key);
+      }
+    }
+  }
+
+  /**
    * Keep only the states worth sending.
    * @param {Array<{device_feature_external_id: string, state?: number, text?: string, minIntervalMs?: number}>} states - Candidate states.
    * @returns {Array<{device_feature_external_id: string, state?: number, text?: string}>} The states to send, stripped of their publishing hints.
