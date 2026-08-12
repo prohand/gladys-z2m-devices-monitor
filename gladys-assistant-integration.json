@@ -6,16 +6,21 @@
     "en": "Alerts you when a Zigbee2MQTT device stops giving signs of life.",
     "fr": "Vous alerte quand un appareil Zigbee2MQTT ne donne plus signe de vie."
   },
-  "version": "1.0.0",
-  "docker_image": "ghcr.io/prohand/gladys-z2m-devices-monitor:1.0.0",
+  "version": "1.0.1",
+  "docker_image": "ghcr.io/prohand/gladys-z2m-devices-monitor:1.0.1",
   "gladys_version": ">=4.85.0",
   "cover_image": "https://raw.githubusercontent.com/prohand/gladys-z2m-devices-monitor/main/cover.jpg",
-  "transports": ["local"],
+  "transports": [
+    "local"
+  ],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "How it works", "fr": "Comment ça marche" },
+      "label": {
+        "en": "How it works",
+        "fr": "Comment ça marche"
+      },
       "description": {
         "en": "A Zigbee device that is alive talks. This integration listens to everything Zigbee2MQTT publishes, remembers when each device last spoke, and flags the ones that have been silent for too long. It never uses the battery level: a Zigbee battery percentage is a coarse estimate that often reads 100% right up to the day the sensor stops answering.",
         "fr": "Un appareil Zigbee vivant parle. Cette intégration écoute tout ce que publie Zigbee2MQTT, mémorise la dernière fois que chaque appareil s'est manifesté, et signale ceux qui se taisent depuis trop longtemps. Elle n'utilise jamais le niveau de batterie : un pourcentage de batterie Zigbee est une estimation grossière, souvent à 100% jusqu'au jour où le capteur cesse de répondre."
@@ -33,7 +38,10 @@
     {
       "key": "broker",
       "type": "section",
-      "label": { "en": "MQTT broker", "fr": "Broker MQTT" },
+      "label": {
+        "en": "MQTT broker",
+        "fr": "Broker MQTT"
+      },
       "description": {
         "en": "The same broker Zigbee2MQTT publishes on. The integration only ever subscribes: it never publishes anything to your Zigbee network. These values have to be typed in here: an integration runs in its own sandbox and Gladys never hands it the settings of another integration. If Gladys installed Zigbee2MQTT for you, copy them from the Zigbee2MQTT integration, Setup tab, \"External tools connection\" block — and replace localhost in the URL with the IP address of your Gladys machine.",
         "fr": "Le même broker que celui utilisé par Zigbee2MQTT. L'intégration ne fait que s'abonner : elle ne publie jamais rien sur votre réseau Zigbee. Ces valeurs doivent être saisies ici : une intégration tourne dans son propre bac à sable et Gladys ne lui communique jamais les réglages d'une autre intégration. Si c'est Gladys qui a installé Zigbee2MQTT, recopiez-les depuis l'intégration Zigbee2MQTT, onglet Configuration, bloc « Connexion pour outils externes » — en remplaçant localhost dans l'URL par l'adresse IP de votre machine Gladys."
@@ -42,19 +50,28 @@
     {
       "key": "mqtt_url",
       "type": "string",
-      "label": { "en": "Broker URL", "fr": "URL du broker" },
+      "label": {
+        "en": "Broker URL",
+        "fr": "URL du broker"
+      },
       "description": {
         "en": "Address of the MQTT broker, e.g. mqtt://192.168.1.10:1883 (mqtts:// and ws:// are supported too).",
         "fr": "Adresse du broker MQTT, par exemple mqtt://192.168.1.10:1883 (mqtts:// et ws:// sont aussi acceptés)."
       },
-      "placeholder": { "en": "mqtt://192.168.1.10:1883", "fr": "mqtt://192.168.1.10:1883" },
+      "placeholder": {
+        "en": "mqtt://192.168.1.10:1883",
+        "fr": "mqtt://192.168.1.10:1883"
+      },
       "required": true,
       "default": "mqtt://localhost:1883"
     },
     {
       "key": "mqtt_username",
       "type": "string",
-      "label": { "en": "Username", "fr": "Nom d'utilisateur" },
+      "label": {
+        "en": "Username",
+        "fr": "Nom d'utilisateur"
+      },
       "description": {
         "en": "Leave empty if your broker allows anonymous connections.",
         "fr": "Laissez vide si votre broker accepte les connexions anonymes."
@@ -65,25 +82,37 @@
     {
       "key": "mqtt_password",
       "type": "secret",
-      "label": { "en": "Password", "fr": "Mot de passe" },
+      "label": {
+        "en": "Password",
+        "fr": "Mot de passe"
+      },
       "required": false
     },
     {
       "key": "base_topic",
       "type": "string",
-      "label": { "en": "Base topic", "fr": "Topic de base" },
+      "label": {
+        "en": "Base topic",
+        "fr": "Topic de base"
+      },
       "description": {
         "en": "The base topic configured in Zigbee2MQTT (mqtt.base_topic).",
         "fr": "Le topic de base configuré dans Zigbee2MQTT (mqtt.base_topic)."
       },
-      "placeholder": { "en": "zigbee2mqtt", "fr": "zigbee2mqtt" },
+      "placeholder": {
+        "en": "zigbee2mqtt",
+        "fr": "zigbee2mqtt"
+      },
       "required": true,
       "default": "zigbee2mqtt"
     },
     {
       "key": "thresholds",
       "type": "section",
-      "label": { "en": "Silence thresholds", "fr": "Seuils de silence" },
+      "label": {
+        "en": "Silence thresholds",
+        "fr": "Seuils de silence"
+      },
       "description": {
         "en": "A device is declared dead once it has been silent for longer than its threshold. Battery sensors report far less often than mains-powered devices, hence two separate defaults. Start generous: it is better to be alerted a few hours late than to be woken up by a false alarm.",
         "fr": "Un appareil est déclaré mort dès qu'il se tait depuis plus longtemps que son seuil. Les capteurs sur pile parlent bien moins souvent que les appareils sur secteur, d'où deux valeurs par défaut distinctes. Commencez large : mieux vaut être alerté quelques heures trop tard que réveillé par une fausse alerte."
@@ -124,7 +153,10 @@
     {
       "key": "custom_timeouts",
       "type": "string",
-      "label": { "en": "Per-device thresholds", "fr": "Seuils par appareil" },
+      "label": {
+        "en": "Per-device thresholds",
+        "fr": "Seuils par appareil"
+      },
       "description": {
         "en": "One device=minutes pair per line or separated by commas. The device is designated by its Zigbee2MQTT friendly name or its IEEE address. Example: mailbox sensor=4320, 0x00158d0001abcdef=60",
         "fr": "Une paire appareil=minutes par ligne ou séparées par des virgules. L'appareil est désigné par son nom convivial Zigbee2MQTT ou son adresse IEEE. Exemple : capteur boite aux lettres=4320, 0x00158d0001abcdef=60"
@@ -139,7 +171,10 @@
     {
       "key": "naming",
       "type": "section",
-      "label": { "en": "Device naming", "fr": "Nommage des appareils" },
+      "label": {
+        "en": "Device naming",
+        "fr": "Nommage des appareils"
+      },
       "description": {
         "en": "Gladys most likely already knows these devices under their Zigbee2MQTT name, through its own Zigbee2MQTT integration. Without a suffix, a scene picker shows the same name twice with no way to tell which is which.",
         "fr": "Gladys connaît très probablement déjà ces appareils sous leur nom Zigbee2MQTT, via sa propre intégration Zigbee2MQTT. Sans suffixe, un sélecteur de scène affiche deux fois le même nom sans moyen de les distinguer."
@@ -156,7 +191,10 @@
         "en": "Appended to the Zigbee2MQTT name of each watched device, e.g. \"office plug (monitor)\". Leave empty to keep the raw name. Only affects the devices you create afterwards: Gladys never renames a device you already added.",
         "fr": "Ajouté au nom Zigbee2MQTT de chaque appareil surveillé, par exemple « prise bureau (monitor) ». Laissez vide pour garder le nom brut. N'affecte que les appareils créés ensuite : Gladys ne renomme jamais un appareil déjà ajouté."
       },
-      "placeholder": { "en": "(monitor)", "fr": "(monitor)" },
+      "placeholder": {
+        "en": "(monitor)",
+        "fr": "(monitor)"
+      },
       "required": false,
       "default": "(monitor)"
     },
@@ -193,12 +231,18 @@
     {
       "key": "advanced",
       "type": "section",
-      "label": { "en": "Advanced", "fr": "Avancé" }
+      "label": {
+        "en": "Advanced",
+        "fr": "Avancé"
+      }
     },
     {
       "key": "ignored_devices",
       "type": "string",
-      "label": { "en": "Devices to ignore", "fr": "Appareils à ignorer" },
+      "label": {
+        "en": "Devices to ignore",
+        "fr": "Appareils à ignorer"
+      },
       "description": {
         "en": "Friendly names or IEEE addresses, separated by commas. Ignored devices are not published to Gladys and never raise an alert.",
         "fr": "Noms conviviaux ou adresses IEEE, séparés par des virgules. Les appareils ignorés ne sont pas publiés vers Gladys et ne déclenchent jamais d'alerte."
@@ -223,7 +267,10 @@
     {
       "key": "check_interval_seconds",
       "type": "number",
-      "label": { "en": "Check interval (s)", "fr": "Intervalle de vérification (s)" },
+      "label": {
+        "en": "Check interval (s)",
+        "fr": "Intervalle de vérification (s)"
+      },
       "description": {
         "en": "How often the silence of every device is re-evaluated.",
         "fr": "Fréquence de réévaluation du silence de chaque appareil."
@@ -237,17 +284,26 @@
   "actions": [
     {
       "key": "test_connection",
-      "label": { "en": "Test the MQTT connection", "fr": "Tester la connexion MQTT" },
+      "label": {
+        "en": "Test the MQTT connection",
+        "fr": "Tester la connexion MQTT"
+      },
       "timeout_seconds": 15
     },
     {
       "key": "list_silent_devices",
-      "label": { "en": "List the silent devices", "fr": "Lister les appareils silencieux" },
+      "label": {
+        "en": "List the silent devices",
+        "fr": "Lister les appareils silencieux"
+      },
       "timeout_seconds": 15
     },
     {
       "key": "refresh_devices",
-      "label": { "en": "Refresh the device list", "fr": "Rafraîchir la liste des appareils" },
+      "label": {
+        "en": "Refresh the device list",
+        "fr": "Rafraîchir la liste des appareils"
+      },
       "timeout_seconds": 30
     }
   ]
