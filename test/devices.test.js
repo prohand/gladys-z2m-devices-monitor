@@ -80,6 +80,32 @@ test('every published device carries a name, an external id and features', () =>
   }
 });
 
+// `min` and `max` are optional in the SDK typings and left untouched when the
+// discovery list is published — but they are NOT NULL in the Gladys schema, so a
+// feature missing one is only rejected the day the user presses "Add" on the
+// Discovery screen, with an HTTP 422 naming a column instead of a device.
+test('every published feature carries the min/max Gladys requires', () => {
+  const { monitor } = createMonitor();
+  for (const device of buildDiscoveredDevices(gladys, monitor.snapshot())) {
+    for (const feature of device.features) {
+      assert.equal(
+        typeof feature.min,
+        'number',
+        `${device.name} / ${feature.name}: min is NOT NULL`,
+      );
+      assert.equal(
+        typeof feature.max,
+        'number',
+        `${device.name} / ${feature.name}: max is NOT NULL`,
+      );
+      assert.ok(
+        feature.max >= feature.min,
+        `${device.name} / ${feature.name}: max must not be below min`,
+      );
+    }
+  }
+});
+
 test('device and feature external ids are unique across the catalog', () => {
   const { monitor } = createMonitor();
   const devices = buildDiscoveredDevices(gladys, monitor.snapshot());

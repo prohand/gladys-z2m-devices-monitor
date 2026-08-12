@@ -68,6 +68,11 @@ export function buildZigbeeDevice(gladys, device) {
         external_id: ids.feature(ZIGBEE_FEATURE.ALIVE),
         category: DEVICE_FEATURE_CATEGORIES.PRESENCE_SENSOR,
         type: DEVICE_FEATURE_TYPES.SENSOR.BINARY,
+        // `min`/`max` are optional in the SDK typings but NOT NULL in the Gladys
+        // schema: a feature published without them makes the device impossible
+        // to create from the Discovery screen (HTTP 422). Binary is 0..1.
+        min: 0,
+        max: 1,
         read_only: true,
         has_feedback: false,
         // The one series worth keeping: it is the alert history of the device.
