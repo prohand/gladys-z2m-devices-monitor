@@ -217,15 +217,26 @@ y compris les appareils que vous appairerez dans six mois.
 2. déclencheur : **La valeur d'un appareil change** → appareil
    _Zigbee2MQTT monitor_, fonctionnalité **Silent devices**, condition
    _supérieur à_ `0` ;
-3. action : **Envoyer un message** (notification mobile, Telegram…) avec un texte
-   du type :
+3. première action : **Récupérer le dernier état** → dans _Sélectionnez un
+   appareil_, choisissez **Zigbee2MQTT monitor (Texte)**, c'est-à-dire la
+   fonctionnalité **Silent device names**.
 
-   > Appareil(s) Zigbee sans signe de vie : {{device.z2m-monitor-silent-names}}
+   C'est l'étape qu'on oublie : dans Gladys, un message ne peut insérer que les
+   valeurs récupérées par une action **placée avant lui**. Sans ce bloc, le
+   sélecteur de variables du message est vide et l'alerte ne pourra pas nommer
+   les capteurs concernés ;
 
-   Utilisez le sélecteur proposé par l'éditeur de scène pour insérer la
-   fonctionnalité **Silent device names** — elle y apparaît sous le nom
-   **Zigbee2MQTT monitor (Texte)** : le message nommera les capteurs concernés au
-   lieu de dire simplement que quelque chose ne va pas.
+4. seconde action : **Envoyer un message** (notification mobile, Telegram…) avec
+   un texte du type :
+
+   > Appareil(s) Zigbee sans signe de vie : _Dernière valeur de l'appareil_
+
+   Pour insérer cette variable, tapez `{{` à l'endroit voulu dans le message :
+   Gladys propose alors la valeur récupérée à l'étape 3, affichée
+   « 1.1. Dernière valeur de l'appareil » (le numéro est la position de l'action
+   _Récupérer le dernier état_ dans la scène). Passez toujours par ce sélecteur
+   plutôt que de taper la variable à la main : le message nommera les capteurs
+   concernés au lieu de dire simplement que quelque chose ne va pas.
 
 Pour un capteur critique en particulier (détecteur de fumée, alarme, congélateur),
 créez en plus une scène dédiée sur sa fonctionnalité **Alive** passant à Off (dans
