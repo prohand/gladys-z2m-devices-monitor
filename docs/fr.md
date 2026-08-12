@@ -60,6 +60,33 @@ connecté, combien d'appareils il voit et combien de messages il a reçus. C'est
 moyen le plus rapide de repérer l'erreur classique — bon broker, mauvais topic de
 base, et rien ne se passe.
 
+#### Où trouver ces trois valeurs
+
+**Ces valeurs doivent être saisies à la main : l'intégration ne peut pas les
+récupérer toute seule dans Gladys.** Une intégration externe tourne dans son
+propre conteneur et ne reçoit de Gladys que sa _propre_ configuration ; l'API que
+Gladys lui expose ne donne accès ni aux réglages ni aux variables des autres
+intégrations. C'est une limite volontaire du bac à sable, pas un oubli : sans
+elle, n'importe quelle intégration du store pourrait lire les identifiants de vos
+autres services.
+
+Le copier-coller reste court :
+
+- **si c'est Gladys qui a installé Zigbee2MQTT** (mode « Installation depuis
+  Gladys »), le broker est le conteneur Mosquitto que Gladys gère. Allez dans
+  l'intégration **Zigbee2MQTT → onglet Configuration**, bloc **« Connexion pour
+  outils externes »** : Gladys y affiche l'URL, le nom d'utilisateur et le mot de
+  passe, avec un bouton de copie. Le mot de passe est engendré
+  aléatoirement à la première activation, il n'y a pas de valeur « par défaut » à
+  deviner. Ce broker écoute sur le port **1884**, et l'URL affichée pointe sur
+  `localhost` : **remplacez `localhost` par l'adresse IP de votre machine
+  Gladys**, sinon `localhost` désignerait le conteneur de cette intégration
+  elle-même. Le topic de base est `zigbee2mqtt` ;
+- **si vous avez votre propre broker** (Zigbee2MQTT autonome, Mosquitto,
+  Home Assistant…), reprenez simplement l'URL et les identifiants que
+  Zigbee2MQTT utilise, c'est-à-dire le bloc `mqtt:` de son
+  `configuration.yaml`.
+
 ### 3. Ajouter les appareils
 
 Allez dans **Appareils → Découvrir**, puis créez les appareils que vous voulez
@@ -117,25 +144,61 @@ L'appareil se désigne par son nom convivial Zigbee2MQTT ou par son adresse IEEE
 
 **Commencez large.** Un seuil trop serré produit des fausses alertes, et une
 alerte à laquelle on cesse de croire ne sert plus à rien. Laissez tourner
-quelques jours, regardez la valeur « Silence » de chaque appareil sur sa fiche,
-puis resserrez.
+quelques jours, regardez la valeur « Silence » de chaque appareil sur sa fiche
+(Gladys l'affiche sous le libellé _Durée (entier)_), puis resserrez.
 
 ## Ce que chaque appareil expose
 
-| Fonctionnalité   | Description                                                                                                                                                      |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Alive**        | 1 = l'appareil donne signe de vie, 0 = il se tait depuis plus que son seuil. C'est la fonctionnalité sur laquelle bâtir une alerte. Son historique est conservé. |
-| **Silence**      | Depuis combien de minutes l'appareil n'a rien dit. Utile pour calibrer les seuils.                                                                               |
-| **Link quality** | Le LQI de son dernier message. Un LQI qui s'effondre depuis des semaines annonce souvent le prochain appareil à mourir.                                          |
+Chaque appareil surveillé expose **2 fonctionnalités** :
 
-L'appareil **Zigbee2MQTT monitor** expose de son côté :
+| Fonctionnalité | Nom affiché par Gladys       | Description                                                                                                                                                      |
+| -------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Alive**      | _Détection présence Oui/Non_ | 1 = l'appareil donne signe de vie, 0 = il se tait depuis plus que son seuil. C'est la fonctionnalité sur laquelle bâtir une alerte. Son historique est conservé. |
+| **Silence**    | _Durée (entier)_             | Depuis combien de minutes l'appareil n'a rien dit. Utile pour calibrer les seuils.                                                                               |
 
-| Fonctionnalité                            | Description                                                                                   |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------- |
-| **Silent devices**                        | Le nombre d'appareils actuellement silencieux.                                                |
-| **Silent device names**                   | Leurs noms, pour les citer dans une notification. Affiche `-` tant que tout le réseau répond. |
-| **Devices alive** / **Devices monitored** | Les compteurs du réseau.                                                                      |
-| **Zigbee2MQTT bridge online**             | L'état du bridge Zigbee2MQTT lui-même.                                                        |
+L'appareil **Zigbee2MQTT monitor** expose de son côté **5 fonctionnalités** :
+
+| Fonctionnalité                | Nom affiché par Gladys | Description                                                                                                                                        |
+| ----------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Silent devices**            | _Silent devices_       | Le nombre d'appareils actuellement silencieux. C'est le déclencheur de la scène d'alerte.                                                          |
+| **Silent device names**       | _Texte_                | Leurs noms, pour les citer dans une notification. Affiche « No silent device » tant que tout le réseau répond (texte modifiable, voir ci-dessous). |
+| **Devices alive**             | _Devices alive_        | Le nombre d'appareils qui répondent.                                                                                                               |
+| **Devices monitored**         | _Devices monitored_    | Le nombre d'appareils surveillés.                                                                                                                  |
+| **Zigbee2MQTT bridge online** | _Etat de l'entrée_     | L'état du bridge Zigbee2MQTT lui-même.                                                                                                             |
+
+### Pourquoi certains noms changent à l'affichage
+
+Gladys ne montre pas toujours le nom donné par l'intégration. Quand une
+fonctionnalité est **la seule de son type sur son appareil**, l'interface affiche
+à la place le libellé standard de sa catégorie — d'où _Texte_ pour « Silent
+device names », _Etat de l'entrée_ pour « Zigbee2MQTT bridge online », ou
+_Compteur entier_ sur l'écran de modification de l'appareil. Les trois compteurs
+du moniteur partagent le même type, donc ils gardent leur nom.
+
+C'est un comportement de Gladys, pas un réglage de cette intégration. Deux
+conséquences pratiques :
+
+- dans un sélecteur de scène, repérez la fonctionnalité par ce nom affiché
+  (« Zigbee2MQTT monitor (Texte) » = les noms des appareils silencieux) ;
+- vous pouvez renommer une fonctionnalité depuis la fiche de l'appareil si le
+  libellé standard ne vous parle pas.
+
+### Le texte affiché quand tout va bien
+
+« Silent device names » est un texte, et il passe l'essentiel de sa vie à ne
+citer personne — c'est bon signe. Il affiche alors une phrase explicite plutôt
+qu'un tiret : **No silent device** par défaut. Le champ **Texte affiché quand
+aucun appareil n'est silencieux** (section _Appareil Zigbee2MQTT monitor_) permet
+de le traduire, par exemple « Aucun appareil silencieux ». Videz le champ pour
+revenir à la valeur par défaut : ce texte ne peut jamais être vide, Gladys
+n'enregistre pas un état texte vide.
+
+### Et l'intensité du signal ?
+
+Elle n'est **pas** publiée par cette intégration : l'intégration Zigbee2MQTT de
+Gladys remonte déjà le LQI de chaque appareil, et un deuxième exemplaire de la
+même valeur ne ferait qu'encombrer les listes d'appareils et les sélecteurs de
+scène.
 
 ## Être alerté : créer la scène
 
@@ -153,11 +216,13 @@ y compris les appareils que vous appairerez dans six mois.
    > Appareil(s) Zigbee sans signe de vie : {{device.z2m-monitor-silent-names}}
 
    Utilisez le sélecteur proposé par l'éditeur de scène pour insérer la
-   fonctionnalité **Silent device names** : le message nommera les capteurs
-   concernés au lieu de dire simplement que quelque chose ne va pas.
+   fonctionnalité **Silent device names** — elle y apparaît sous le nom
+   **Zigbee2MQTT monitor (Texte)** : le message nommera les capteurs concernés au
+   lieu de dire simplement que quelque chose ne va pas.
 
 Pour un capteur critique en particulier (détecteur de fumée, alarme, congélateur),
-créez en plus une scène dédiée sur sa fonctionnalité **Alive** passant à 0.
+créez en plus une scène dédiée sur sa fonctionnalité **Alive** passant à 0 (dans
+le sélecteur : _nom de l'appareil (Détection présence Oui/Non)_).
 
 Astuce : ajoutez une condition d'horaire à la scène si vous ne voulez pas être
 réveillé la nuit — un capteur muet peut presque toujours attendre le matin.
@@ -184,6 +249,13 @@ réveillé la nuit — un capteur muet peut presque toujours attendre le matin.
   l'intégration. Un redémarrage du conteneur ne remet donc pas tous vos appareils
   à zéro — sans quoi un capteur mort depuis un mois repartirait pour un seuil
   complet sans jamais déclencher l'alerte.
+- **Si vous mettez à jour depuis une version qui publiait l'intensité du
+  signal**, les appareils déjà créés dans Gladys conservent cette
+  fonctionnalité : une intégration ne peut pas retirer une fonctionnalité d'un
+  appareil que vous avez créé. Elle ne reçoit plus de valeur et reste figée sur
+  la dernière. Pour la faire disparaître, supprimez l'appareil dans Gladys et
+  recréez-le depuis **Découvrir** (son historique est alors perdu) ; sinon,
+  ignorez-la.
 - **Un appareil jamais entendu** dispose d'un seuil complet à partir du démarrage
   du moniteur avant d'être signalé. Une intégration fraîchement installée ne
   déclare donc pas tout le réseau mort à la première minute.
@@ -199,7 +271,7 @@ probablement pas à celui de Zigbee2MQTT. Comparez-le avec `mqtt.base_topic` dan
 votre `configuration.yaml`.
 
 **Un appareil est signalé silencieux alors qu'il fonctionne.** Son seuil est trop
-serré : regardez sa fonctionnalité _Silence_ pour connaître son rythme réel, et
+serré : regardez sa fonctionnalité _Silence_ (_Durée (entier)_) pour connaître son rythme réel, et
 donnez-lui un seuil sur mesure. Les capteurs de porte, de fuite ou les boutons
 sont typiquement muets pendant des jours s'il ne se passe rien.
 

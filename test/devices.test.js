@@ -196,37 +196,55 @@ test('the silence feature is a duration in minutes', () => {
   assert.equal(silence.min, 0);
 });
 
-test('the states report the verdict, the silence and the signal', () => {
+test('the states report the verdict and the silence', () => {
   const { monitor, clock } = createMonitor({ default_timeout_minutes: 60 });
-  monitor.recordActivity('office plug', { linkQuality: 96 });
+  monitor.recordActivity('office plug');
   clock.advanceMinutes(75);
 
   const ids = zigbeeExternalIds(gladys, PLUG_IEEE);
-  const states = buildAllStates(gladys, monitor.snapshot());
+  const states = buildAllStates(gladys, monitor.snapshot(), config);
   assert.equal(stateOf(states, ids.feature(ZIGBEE_FEATURE.ALIVE)), 0);
   assert.equal(stateOf(states, ids.feature(ZIGBEE_FEATURE.SILENCE)), 75);
-  assert.equal(stateOf(states, ids.feature(ZIGBEE_FEATURE.LINK_QUALITY)), 96);
 });
 
-test('the link quality is left unpublished until one is known', () => {
+// Gladys already publishes the LQI of every device through its own Zigbee2MQTT
+// integration: a second copy of the same number only clutters the pickers.
+test('the link quality is not published at all', () => {
   const { monitor } = createMonitor();
+  monitor.recordActivity('office plug');
   const ids = zigbeeExternalIds(gladys, PLUG_IEEE);
-  const states = buildAllStates(gladys, monitor.snapshot());
-  assert.equal(stateOf(states, ids.feature(ZIGBEE_FEATURE.LINK_QUALITY)), undefined);
+  const plug = buildDiscoveredDevices(gladys, monitor.snapshot(), config).find(
+    (d) => d.external_id === ids.device,
+  );
+
+  assert.deepEqual(
+    plug.features.map((feature) => feature.name),
+    ['Alive', 'Silence'],
+  );
+  for (const state of buildAllStates(gladys, monitor.snapshot(), config)) {
+    assert.ok(!state.device_feature_external_id.includes('link-quality'));
+  }
 });
 
-test('the alive state is never throttled, the gauges are', () => {
-  const { monitor } = createMonitor();
-  monitor.recordActivity('office plug', { linkQuality: 96 });
+test('the alive state is never throttled, the silence gauge is', () => {
+  const { monitor, clock } = createMonitor();
+  monitor.recordActivity('office plug');
+  clock.advanceMinutes(30);
   const ids = zigbeeExternalIds(gladys, PLUG_IEEE);
-  const states = buildAllStates(gladys, monitor.snapshot());
+  const states = buildAllStates(gladys, monitor.snapshot(), config);
   const find = (key) =>
     states.find((state) => state.device_feature_external_id === ids.feature(key));
 
   assert.equal(find(ZIGBEE_FEATURE.ALIVE).minIntervalMs, undefined, 'an alert goes out at once');
-  assert.ok(find(ZIGBEE_FEATURE.LINK_QUALITY).minIntervalMs > 0);
+  assert.ok(find(ZIGBEE_FEATURE.SILENCE).minIntervalMs > 0);
+
+  // …except the moment the device breaks its silence.
+  monitor.recordActivity('office plug');
+  const reset = buildAllStates(gladys, monitor.snapshot(), config).find(
+    (state) => state.device_feature_external_id === ids.feature(ZIGBEE_FEATURE.SILENCE),
+  );
   assert.equal(
-    find(ZIGBEE_FEATURE.SILENCE).minIntervalMs,
+    reset.minIntervalMs,
     0,
     'a counter falling back to zero is good news worth publishing at once',
   );
@@ -234,7 +252,7 @@ test('the alive state is never throttled, the gauges are', () => {
 
 test('no state is published for an excluded device', () => {
   const { monitor } = createMonitor({ ignored_devices: 'kitchen/motion' });
-  const states = buildAllStates(gladys, monitor.snapshot());
+  const states = buildAllStates(gladys, monitor.snapshot(), config);
   const ignoredIds = zigbeeExternalIds(gladys, MOTION_IEEE);
   assert.equal(stateOf(states, ignoredIds.feature(ZIGBEE_FEATURE.ALIVE)), undefined);
 });
@@ -250,7 +268,7 @@ test('the summary counts the network and names the silent devices', () => {
   clock.advanceMinutes(61);
 
   const ids = summaryExternalIds(gladys);
-  const states = buildAllStates(gladys, monitor.snapshot());
+  const states = buildAllStates(gladys, monitor.snapshot(), config);
   assert.equal(stateOf(states, ids.feature(SUMMARY_FEATURE.DEVICES_MONITORED)), 2);
   assert.equal(stateOf(states, ids.feature(SUMMARY_FEATURE.DEVICES_SILENT)), 1);
   assert.equal(stateOf(states, ids.feature(SUMMARY_FEATURE.DEVICES_ALIVE)), 1);
@@ -263,11 +281,11 @@ test('the summary counts the network and names the silent devices', () => {
 // network its update, and every feature reads "no recent value" in the UI.
 test('every candidate state carries the shape the host API accepts', () => {
   const { monitor, clock } = createMonitor({ default_timeout_minutes: 60 });
-  monitor.recordActivity('office plug', { linkQuality: 96 });
+  monitor.recordActivity('office plug');
   monitor.setBridgeOnline(true);
   clock.advanceMinutes(75);
 
-  for (const state of buildAllStates(gladys, monitor.snapshot())) {
+  for (const state of buildAllStates(gladys, monitor.snapshot(), config)) {
     const hasState = typeof state.state === 'number' && Number.isFinite(state.state);
     const hasText = typeof state.text === 'string';
     assert.ok(
@@ -282,7 +300,7 @@ test('every candidate state carries the shape the host API accepts', () => {
 test('the bridge feature stays unpublished until the bridge speaks', () => {
   const { monitor } = createMonitor();
   const ids = summaryExternalIds(gladys);
-  const states = buildAllStates(gladys, monitor.snapshot());
+  const states = buildAllStates(gladys, monitor.snapshot(), config);
   assert.equal(stateOf(states, ids.feature(SUMMARY_FEATURE.BRIDGE_ONLINE)), undefined);
 });
 
@@ -293,12 +311,12 @@ test('the bridge feature stays unpublished until the bridge speaks', () => {
 test('every candidate state is one Gladys actually stores', async () => {
   const { monitor, clock } = createMonitor({ default_timeout_minutes: 60 });
   const fake = createFakeGladys();
-  monitor.recordActivity('office plug', { linkQuality: 96 });
+  monitor.recordActivity('office plug');
   monitor.recordActivity('kitchen/motion');
   monitor.setBridgeOnline(true);
   clock.advanceMinutes(10);
 
-  const states = buildAllStates(fake, monitor.snapshot());
+  const states = buildAllStates(fake, monitor.snapshot(), config);
   await fake.publishStates(states);
 
   for (const state of states) {
@@ -317,35 +335,63 @@ test('a device created from the Discovery screen gets its states without waiting
   const { monitor, clock } = createMonitor({ default_timeout_minutes: 60 });
   const fake = createFakeGladys();
   const publisher = new StatePublisher({ gladys: fake, now: clock.now });
-  monitor.recordActivity('office plug', { linkQuality: 96 });
+  monitor.recordActivity('office plug');
 
   // Tick 1: nothing exists in Gladys yet, every state is dropped on arrival.
-  await publisher.publish(buildAllStates(fake, monitor.snapshot()));
+  await publisher.publish(buildAllStates(fake, monitor.snapshot(), config));
   fake.batches.length = 0;
 
   // The user presses "Add" on the plug: only its states are published again.
   const plug = zigbeeExternalIds(fake, PLUG_IEEE);
   publisher.forgetDevice(plug.device);
-  await publisher.publish(buildAllStates(fake, monitor.snapshot()));
+  await publisher.publish(buildAllStates(fake, monitor.snapshot(), config));
 
   const republished = fake.batches.flat().map((s) => s.device_feature_external_id);
   assert.deepEqual(republished, [
     plug.feature(ZIGBEE_FEATURE.ALIVE),
     plug.feature(ZIGBEE_FEATURE.SILENCE),
-    plug.feature(ZIGBEE_FEATURE.LINK_QUALITY),
   ]);
 });
 
 test('the silent names feature never publishes an empty text', () => {
   const { monitor } = createMonitor();
   const ids = summaryExternalIds(gladys);
-  const states = buildAllStates(gladys, monitor.snapshot());
+  const states = buildAllStates(gladys, monitor.snapshot(), config);
   assert.equal(textOf(states, ids.feature(SUMMARY_FEATURE.SILENT_NAMES)), NO_SILENT_DEVICES_TEXT);
   assert.ok(NO_SILENT_DEVICES_TEXT.length > 0);
 });
 
+// A healthy network is where this feature spends its life: a lone dash there
+// reads like a feature that never received anything.
+test('the silent names feature says so in words when the whole network answers', () => {
+  const { monitor } = createMonitor();
+  const ids = summaryExternalIds(gladys);
+  const states = buildAllStates(gladys, monitor.snapshot(), config);
+  const text = textOf(states, ids.feature(SUMMARY_FEATURE.SILENT_NAMES));
+  assert.equal(text, 'No silent device');
+  assert.ok(/[a-z]{3}/i.test(text), 'a real sentence, not a placeholder');
+});
+
+test('the user can translate the "nothing is silent" text', () => {
+  const { monitor } = createMonitor();
+  const ids = summaryExternalIds(gladys);
+  const translated = normalizeConfig({ no_silent_devices_text: 'Aucun appareil silencieux' });
+  const states = buildAllStates(gladys, monitor.snapshot(), translated);
+  assert.equal(
+    textOf(states, ids.feature(SUMMARY_FEATURE.SILENT_NAMES)),
+    'Aucun appareil silencieux',
+  );
+
+  // Emptying the field falls back to the default: an empty text is accepted by
+  // the host API and then dropped by the core.
+  const emptied = normalizeConfig({ no_silent_devices_text: '   ' });
+  const fallback = buildAllStates(gladys, monitor.snapshot(), emptied);
+  assert.equal(textOf(fallback, ids.feature(SUMMARY_FEATURE.SILENT_NAMES)), NO_SILENT_DEVICES_TEXT);
+});
+
 test('formatSilentNames stays readable when half the network is down', () => {
   assert.equal(formatSilentNames([]), NO_SILENT_DEVICES_TEXT);
+  assert.equal(formatSilentNames([], 'Tout va bien'), 'Tout va bien');
   assert.equal(formatSilentNames([{ friendlyName: 'a' }, { friendlyName: 'b' }]), 'a, b');
   const many = Array.from({ length: 14 }, (_, index) => ({ friendlyName: `sensor-${index}` }));
   const text = formatSilentNames(many);

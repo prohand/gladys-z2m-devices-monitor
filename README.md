@@ -53,13 +53,20 @@ Zigbee2MQTT keeps the history), carrying:
   alert on.
 - **Silence** — how many minutes the device has been quiet, to size the
   thresholds.
-- **Link quality** — the LQI of its last message; a collapsing LQI usually
-  announces the next device to die.
 
-Plus one **Zigbee2MQTT monitor** device summarizing the network — silent count,
-silent names (for the notification text), alive count, watched count, and the
-bridge state. One scene on its `Silent devices > 0` covers every device,
-including the ones paired next year.
+The link quality is deliberately left out: Gladys already publishes the LQI of
+every device through its own Zigbee2MQTT integration.
+
+Plus one **Zigbee2MQTT monitor** device summarizing the network, with five
+features — silent count, silent names (the notification text), alive count,
+watched count, and the bridge state. One scene on its `Silent devices > 0`
+covers every device, including the ones paired next year.
+
+Note that Gladys shows the standard label of a feature's category
+(`Text`, `State of input`…) instead of the name given here whenever that feature
+is the only one of its type on its device — see
+[`front/src/utils/device.js`](https://github.com/GladysAssistant/Gladys/blob/master/front/src/utils/device.js).
+The user documentation lists both names side by side.
 
 ## Project structure
 
@@ -90,10 +97,9 @@ including the ones paired next year.
 ## Design notes
 
 **Rate limiting.** The host API accepts 300 states per minute per integration,
-sized for state _changes_. Two of the three features are gauges that move on
-their own (silence grows every minute, LQI wobbles on every report), so
-[`src/statePublisher.js`](src/statePublisher.js) deduplicates and throttles them,
-while `Alive` — the alert — is never held back.
+sized for state _changes_. `Silence` is a gauge that moves on its own every
+minute, so [`src/statePublisher.js`](src/statePublisher.js) deduplicates and
+throttles it, while `Alive` — the alert — is never held back.
 
 **Persistence.** The last-seen map is written to `/data`, the single writable
 volume of the sandbox. Without it, a container restart would hand a device that

@@ -134,22 +134,6 @@ export function parseLastSeen(payload, now = Date.now()) {
 }
 
 /**
- * Read the `linkquality` (LQI) field of a device report.
- * @param {unknown} payload - Parsed device report.
- * @returns {number | undefined} The link quality between 0 and 255, or undefined.
- */
-export function parseLinkQuality(payload) {
-  if (!payload || typeof payload !== 'object') {
-    return undefined;
-  }
-  const value = Number(payload.linkquality);
-  if (!Number.isFinite(value) || value < 0 || value > 255) {
-    return undefined;
-  }
-  return Math.round(value);
-}
-
-/**
  * Read an online/offline state published either as `{ "state": "online" }` or as
  * the bare string `online` (older Zigbee2MQTT versions).
  * @param {unknown} payload - Parsed payload.

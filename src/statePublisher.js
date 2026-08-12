@@ -4,15 +4,14 @@
 // The host API rate-limits `POST /state` at 300 states per minute per
 // integration, and it is sized for state CHANGES, not for full snapshots. This
 // integration re-evaluates every device on every tick, so it would happily blow
-// through that budget on a large network — and two of its three features are
-// gauges that change on their own:
+// through that budget on a large network — and one of its two per-device
+// features is a gauge that changes on its own:
 //
 //   - "Alive" only moves when a device dies or comes back: plain deduplication
 //     is enough, and every change goes out immediately (it is the alert).
-//   - "Silence" grows by one every single minute, and "Link quality" wobbles on
-//     every report. Publishing them blindly would spend the whole budget on
-//     counters nobody is watching, so they carry a `minIntervalMs`: their value
-//     is refreshed at most that often.
+//   - "Silence" grows by one every single minute. Publishing it blindly would
+//     spend the whole budget on a counter nobody is watching, so it carries a
+//     `minIntervalMs`: its value is refreshed at most that often.
 //
 // Unchanged values are still republished once in a while (`refreshMs`), so a
 // device screen opened after a long quiet period is never blank.

@@ -49,8 +49,8 @@ test('a changed value is published immediately when it carries no minimum interv
   assert.equal(await publisher.publish([state('a', 0)]), 1);
 });
 
-// The gauges (silence, link quality) move on their own every minute: without
-// this, a large network would spend its whole 300 states/minute budget on them.
+// The silence gauge moves on its own every minute: without this, a large
+// network would spend its whole 300 states/minute budget on it.
 test('a throttled gauge is held back until its minimum interval elapsed', async () => {
   const { publisher, clock } = createPublisher();
   const throttle = 5 * 60 * 1000;

@@ -142,25 +142,15 @@ test('the last-seen timestamp never moves backwards', () => {
   assert.equal(device(monitor.snapshot(), PLUG_IEEE).silenceMinutes, 0);
 });
 
-test('recordLinkQuality reports the signal without claiming a sign of life', () => {
-  const { monitor } = createMonitor();
-  monitor.recordLinkQuality('office plug', 42);
-  const plug = device(monitor.snapshot(), PLUG_IEEE);
-  assert.equal(plug.linkQuality, 42);
-  assert.equal(plug.neverSeen, true, 'a retained report proves nothing about WHEN');
-});
-
 test('activity received before the inventory is replayed, not lost', () => {
   const clock = createClock();
   const monitor = new DevicesMonitor({ config: normalizeConfig(), now: clock.now });
   // The device reports before `bridge/devices` has been received.
-  monitor.recordActivity('office plug', { linkQuality: 77 });
+  monitor.recordActivity('office plug');
   clock.advanceMinutes(10);
   monitor.setZ2mDevices(parseBridgeDevices(BRIDGE_DEVICES_PAYLOAD));
 
-  const plug = device(monitor.snapshot(), PLUG_IEEE);
-  assert.equal(plug.silenceMinutes, 10);
-  assert.equal(plug.linkQuality, 77);
+  assert.equal(device(monitor.snapshot(), PLUG_IEEE).silenceMinutes, 10);
 });
 
 test('a device removed from the network stops carrying stale activity', () => {

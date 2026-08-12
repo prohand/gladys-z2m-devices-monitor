@@ -55,9 +55,7 @@ test('a device report counts as a sign of life', () => {
   clock.advanceMinutes(30);
   send(`${BASE}/office plug`, { state: 'ON', linkquality: 84 });
 
-  const plug = device(monitor, PLUG_IEEE);
-  assert.equal(plug.silenceMinutes, 0);
-  assert.equal(plug.linkQuality, 84);
+  assert.equal(device(monitor, PLUG_IEEE).silenceMinutes, 0);
 });
 
 // The heart of the matter. On every reconnection the broker replays the last
@@ -74,7 +72,6 @@ test('a retained report does NOT reset the silence', () => {
   const plug = device(monitor, PLUG_IEEE);
   assert.equal(plug.silenceMinutes, 120, 'the replayed message proves nothing about WHEN');
   assert.equal(plug.alive, false);
-  assert.equal(plug.linkQuality, 60, 'but the signal it carries is still worth keeping');
 });
 
 test('a retained report carrying last_seen IS usable, and dated', () => {
@@ -151,9 +148,7 @@ test('reports arriving before the inventory are replayed once it lands', () => {
   clock.advanceMinutes(5);
   send(`${BASE}/bridge/devices`, BRIDGE_DEVICES_PAYLOAD);
 
-  const plug = device(monitor, PLUG_IEEE);
-  assert.equal(plug.silenceMinutes, 5);
-  assert.equal(plug.linkQuality, 91);
+  assert.equal(device(monitor, PLUG_IEEE).silenceMinutes, 5);
 });
 
 test('foreign and unrelated topics are ignored', () => {

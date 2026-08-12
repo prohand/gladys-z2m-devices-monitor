@@ -35,8 +35,8 @@
       "type": "section",
       "label": { "en": "MQTT broker", "fr": "Broker MQTT" },
       "description": {
-        "en": "The same broker Zigbee2MQTT publishes on. The integration only ever subscribes: it never publishes anything to your Zigbee network.",
-        "fr": "Le même broker que celui utilisé par Zigbee2MQTT. L'intégration ne fait que s'abonner : elle ne publie jamais rien sur votre réseau Zigbee."
+        "en": "The same broker Zigbee2MQTT publishes on. The integration only ever subscribes: it never publishes anything to your Zigbee network. These values have to be typed in here: an integration runs in its own sandbox and Gladys never hands it the settings of another integration. If Gladys installed Zigbee2MQTT for you, copy them from the Zigbee2MQTT integration, Setup tab, \"External tools connection\" block — and replace localhost in the URL with the IP address of your Gladys machine.",
+        "fr": "Le même broker que celui utilisé par Zigbee2MQTT. L'intégration ne fait que s'abonner : elle ne publie jamais rien sur votre réseau Zigbee. Ces valeurs doivent être saisies ici : une intégration tourne dans son propre bac à sable et Gladys ne lui communique jamais les réglages d'une autre intégration. Si c'est Gladys qui a installé Zigbee2MQTT, recopiez-les depuis l'intégration Zigbee2MQTT, onglet Configuration, bloc « Connexion pour outils externes » — en remplaçant localhost dans l'URL par l'adresse IP de votre machine Gladys."
       }
     },
     {
@@ -159,6 +159,36 @@
       "placeholder": { "en": "(monitor)", "fr": "(monitor)" },
       "required": false,
       "default": "(monitor)"
+    },
+    {
+      "key": "summary_device",
+      "type": "section",
+      "label": {
+        "en": "Zigbee2MQTT monitor device",
+        "fr": "Appareil Zigbee2MQTT monitor"
+      },
+      "description": {
+        "en": "The single device summarizing the whole network: how many devices are watched, how many are silent, and the names of the silent ones — the text a scene notification quotes. It is the one to build your alert on: its counters cover every device Zigbee2MQTT knows about, including the ones you pair later.",
+        "fr": "L'appareil unique qui résume tout le réseau : combien d'appareils sont surveillés, combien sont silencieux, et le nom de ceux qui se taisent — le texte qu'une notification de scène reprend. C'est sur lui qu'il faut bâtir l'alerte : ses compteurs couvrent tous les appareils connus de Zigbee2MQTT, y compris ceux que vous appairerez plus tard."
+      }
+    },
+    {
+      "key": "no_silent_devices_text",
+      "type": "string",
+      "label": {
+        "en": "Text shown when no device is silent",
+        "fr": "Texte affiché quand aucun appareil n'est silencieux"
+      },
+      "description": {
+        "en": "What the \"Silent device names\" feature reads while the whole network is answering. Write it in your own language; empty restores the default.",
+        "fr": "Ce qu'affiche la fonctionnalité « Silent device names » tant que tout le réseau répond. Écrivez-le dans votre langue ; vide rétablit la valeur par défaut."
+      },
+      "placeholder": {
+        "en": "No silent device",
+        "fr": "Aucun appareil silencieux"
+      },
+      "required": false,
+      "default": "No silent device"
     },
     {
       "key": "advanced",

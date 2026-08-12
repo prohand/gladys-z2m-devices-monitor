@@ -59,6 +59,30 @@ connected, how many devices it sees and how many messages it received. It is the
 fastest way to catch the classic mistake — right broker, wrong base topic, and
 nothing happens at all.
 
+#### Where to find those three values
+
+**They have to be typed in by hand: the integration cannot read them from Gladys
+on its own.** An external integration runs in its own container and Gladys only
+ever hands it its _own_ configuration; the API Gladys exposes to it gives no
+access to the settings or variables of another integration. That is a deliberate
+property of the sandbox, not an oversight: without it, any integration from the
+store could read the credentials of your other services.
+
+The copy/paste is short though:
+
+- **if Gladys installed Zigbee2MQTT for you** ("Installation from Gladys" mode),
+  the broker is the Mosquitto container Gladys manages. Open the **Zigbee2MQTT**
+  integration → **Setup** tab → **"External tools connection"** block: Gladys
+  displays the URL, the username and the password there, with a copy button. The
+  password is generated randomly on the first activation, so there is no
+  "default" value to guess. That broker listens on port **1884**, and the URL
+  shown points at `localhost`: **replace `localhost` with the IP address of your
+  Gladys machine**, otherwise `localhost` would mean this integration's own
+  container. The base topic is `zigbee2mqtt`;
+- **if you run your own broker** (standalone Zigbee2MQTT, Mosquitto, Home
+  Assistant…), just reuse the URL and credentials Zigbee2MQTT itself uses — the
+  `mqtt:` block of its `configuration.yaml`.
+
 ### 3. Add the devices
 
 Go to **Devices → Discover**, then create the devices you want to watch. You will
@@ -116,24 +140,58 @@ The device is designated by its Zigbee2MQTT friendly name or its IEEE address.
 
 **Start generous.** A tight threshold produces false alerts, and an alert nobody
 believes anymore is worthless. Let it run for a few days, look at the "Silence"
-value on each device screen, then tighten.
+value on each device screen (Gladys labels it _Duration (integer)_), then
+tighten.
 
 ## What each device exposes
 
-| Feature          | Description                                                                                                                                                  |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Alive**        | 1 = the device is giving signs of life, 0 = it has been silent for longer than its threshold. This is the feature to build an alert on. Its history is kept. |
-| **Silence**      | How many minutes the device has been quiet. Useful to size the thresholds.                                                                                   |
-| **Link quality** | The LQI of its last message. An LQI that has been collapsing for weeks often announces the next device to die.                                               |
+Every watched device exposes **2 features**:
 
-The **Zigbee2MQTT monitor** device exposes:
+| Feature     | Name displayed by Gladys | Description                                                                                                                                                  |
+| ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Alive**   | _Presence (binary)_      | 1 = the device is giving signs of life, 0 = it has been silent for longer than its threshold. This is the feature to build an alert on. Its history is kept. |
+| **Silence** | _Duration (integer)_     | How many minutes the device has been quiet. Useful to size the thresholds.                                                                                   |
 
-| Feature                                   | Description                                                                                    |
-| ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| **Silent devices**                        | How many devices are currently silent.                                                         |
-| **Silent device names**                   | Their names, so a notification can quote them. Reads `-` while the whole network is answering. |
-| **Devices alive** / **Devices monitored** | The network counters.                                                                          |
-| **Zigbee2MQTT bridge online**             | The state of the Zigbee2MQTT bridge itself.                                                    |
+The **Zigbee2MQTT monitor** device exposes **5 features**:
+
+| Feature                       | Name displayed by Gladys | Description                                                                                                                         |
+| ----------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Silent devices**            | _Silent devices_         | How many devices are currently silent. This is the alert trigger.                                                                   |
+| **Silent device names**       | _Text_                   | Their names, so a notification can quote them. Reads "No silent device" while the whole network is answering (editable, see below). |
+| **Devices alive**             | _Devices alive_          | How many devices are answering.                                                                                                     |
+| **Devices monitored**         | _Devices monitored_      | How many devices are watched.                                                                                                       |
+| **Zigbee2MQTT bridge online** | _State of input_         | The state of the Zigbee2MQTT bridge itself.                                                                                         |
+
+### Why some names change on screen
+
+Gladys does not always show the name the integration gave a feature. When a
+feature is **the only one of its type on its device**, the UI shows the standard
+label of its category instead — hence _Text_ for "Silent device names", _State
+of input_ for "Zigbee2MQTT bridge online", or _Counter (integer)_ on the device
+edit screen. The three monitor counters share the same type, so they keep their names.
+
+This is Gladys behaviour, not a setting of this integration. Two practical
+consequences:
+
+- in a scene picker, look for the displayed name ("Zigbee2MQTT monitor (Text)" =
+  the names of the silent devices);
+- you can rename a feature from the device page if the standard label does not
+  speak to you.
+
+### The text shown when all is well
+
+"Silent device names" is a text feature, and it spends most of its life naming
+nobody — which is good news. It then shows an explicit sentence rather than a
+dash: **No silent device** by default. The **Text shown when no device is
+silent** field (_Zigbee2MQTT monitor device_ section) lets you translate it.
+Empty the field to restore the default: this text can never be empty, Gladys does
+not store an empty text state.
+
+### What about the signal strength?
+
+It is **not** published by this integration: the Gladys Zigbee2MQTT integration
+already reports the LQI of every device, and a second copy of the same number
+would only clutter the device lists and the scene pickers.
 
 ## Getting alerted: the scene
 
@@ -150,11 +208,13 @@ including the devices you will pair six months from now.
    > Zigbee device(s) with no sign of life: {{device.z2m-monitor-silent-names}}
 
    Use the picker offered by the scene editor to insert the **Silent device
-   names** feature: the message will name the sensors involved instead of just
-   saying something is wrong.
+   names** feature — it appears there as **Zigbee2MQTT monitor (Text)**: the
+   message will name the sensors involved instead of just saying something is
+   wrong.
 
 For one particularly critical sensor (smoke detector, alarm, freezer), add a
-dedicated scene on its **Alive** feature turning to 0.
+dedicated scene on its **Alive** feature turning to 0 (in the picker: _device
+name (Presence (binary))_).
 
 Tip: add a time condition to the scene if you would rather not be woken up at
 night — a silent sensor can almost always wait until morning.
@@ -179,6 +239,12 @@ night — a silent sensor can almost always wait until morning.
   container restart therefore does not reset every device — otherwise a sensor
   that died a month ago would start a fresh threshold and the alert would never
   fire.
+- **If you are upgrading from a version that published the signal strength**,
+  the devices you already created in Gladys keep that feature: an integration
+  cannot remove a feature from a device you created. It stops receiving values
+  and stays frozen on the last one. To get rid of it, delete the device in Gladys
+  and re-create it from **Discover** (its history is lost then); otherwise just
+  ignore it.
 - **A device never heard from** gets one full threshold from the moment the
   monitor started before being flagged. A freshly installed integration does not
   declare the whole network dead on its first minute.
@@ -194,7 +260,7 @@ the one Zigbee2MQTT uses. Compare it with `mqtt.base_topic` in your
 `configuration.yaml`.
 
 **A device is flagged silent while it works fine.** Its threshold is too tight:
-look at its _Silence_ feature to learn its real rhythm, then give it a custom
+look at its _Silence_ (_Duration (integer)_) feature to learn its real rhythm, then give it a custom
 threshold. Door, leak and button sensors are typically quiet for days when
 nothing happens.
 
