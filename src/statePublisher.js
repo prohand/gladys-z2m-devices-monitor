@@ -52,17 +52,18 @@ export class StatePublisher {
 
   /**
    * Keep only the states worth sending.
-   * @param {Array<{device_feature_external_id: string, state: unknown, minIntervalMs?: number}>} states - Candidate states.
-   * @returns {Array<{device_feature_external_id: string, state: unknown}>} The states to send, stripped of their publishing hints.
+   * @param {Array<{device_feature_external_id: string, state?: number, text?: string, minIntervalMs?: number}>} states - Candidate states.
+   * @returns {Array<{device_feature_external_id: string, state?: number, text?: string}>} The states to send, stripped of their publishing hints.
    */
   selectChanged(states) {
     const now = this.now();
     const selected = [];
-    for (const { device_feature_external_id, state, minIntervalMs = 0 } of states) {
+    for (const { device_feature_external_id, state, text, minIntervalMs = 0 } of states) {
+      const value = text !== undefined ? text : state;
       const previous = this.published.get(device_feature_external_id);
       if (previous !== undefined) {
         const age = now - previous.at;
-        if (sameValue(previous.value, state)) {
+        if (previous.value === value) {
           if (age < this.refreshMs) {
             continue; // nothing new, and the periodic refresh is not due
           }
@@ -70,7 +71,15 @@ export class StatePublisher {
           continue; // a gauge moving faster than it is worth reporting
         }
       }
-      selected.push({ device_feature_external_id, state });
+      // The host API validates the WHOLE batch before saving anything, and takes
+      // a numeric `state` or a string `text` — never a wrapper object. Send back
+      // exactly the field the feature carries, so one text state cannot discard
+      // the states of the entire network.
+      selected.push(
+        text !== undefined
+          ? { device_feature_external_id, text }
+          : { device_feature_external_id, state },
+      );
     }
     return selected;
   }
@@ -94,24 +103,12 @@ export class StatePublisher {
       // retried on the next tick instead of being considered published.
       const at = this.now();
       for (const state of batch) {
-        this.published.set(state.device_feature_external_id, { value: state.state, at });
+        const value = state.text !== undefined ? state.text : state.state;
+        this.published.set(state.device_feature_external_id, { value, at });
       }
     }
 
     logger.debug(`Published ${selected.length} state(s) out of ${states.length} evaluated`);
     return selected.length;
   }
-}
-
-/**
- * Compare two feature values, handling the `{ text }` shape of text features.
- * @param {unknown} a - Previously published value.
- * @param {unknown} b - Candidate value.
- * @returns {boolean} True when they are the same value.
- */
-function sameValue(a, b) {
-  if (typeof a === 'object' && a !== null && typeof b === 'object' && b !== null) {
-    return a.text === b.text;
-  }
-  return a === b;
 }

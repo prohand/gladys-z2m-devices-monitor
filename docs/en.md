@@ -67,6 +67,32 @@ find:
 - one device **per Zigbee device** known to Zigbee2MQTT;
 - one **Zigbee2MQTT monitor** device summarizing the whole network.
 
+Watched devices carry their Zigbee2MQTT name **followed by a suffix**,
+`(monitor)` by default: `office plug (monitor)`. Without it they would be
+impossible to tell apart from the devices Gladys already exposes under the very
+same name through its own Zigbee2MQTT integration — a scene picker would show
+"office plug" twice. Change it (or empty it) under **Device naming**. It only
+applies to the devices you create afterwards: Gladys never renames a device you
+already added, rename it yourself on its page.
+
+### What happens when the Zigbee network changes?
+
+The integration keeps re-reading the Zigbee2MQTT inventory, so the **Discover**
+screen updates on its own:
+
+- **a device you just paired** shows up in the list within seconds, with no
+  restart and nothing to click. Creating it in Gladys stays **manual** though —
+  what enters your installation is your call. That is also why the scene worth
+  building is the one on the **Zigbee2MQTT monitor** device: its counters cover
+  every device Zigbee2MQTT knows about, including the ones you never created in
+  Gladys, so a newly paired device is covered by the alert from the moment it
+  joins;
+- **a device removed from Zigbee2MQTT** disappears from the **Discover** screen
+  and stops being counted and publishing values. If you had already created it in
+  Gladys, its device is **not deleted automatically**: it stays, frozen on its
+  last value. An integration is not allowed to delete your devices — remove it
+  from **Devices** whenever you want.
+
 ## Silence thresholds
 
 A device is declared dead once it has been silent for longer than its threshold.

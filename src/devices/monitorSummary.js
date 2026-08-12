@@ -69,6 +69,11 @@ export function buildSummaryDevice(gladys) {
         external_id: ids.feature(SUMMARY_FEATURE.SILENT_NAMES),
         category: DEVICE_FEATURE_CATEGORIES.TEXT,
         type: DEVICE_FEATURE_TYPES.TEXT.TEXT,
+        // Meaningless for a text feature, but the Gladys schema declares both
+        // columns NOT NULL — omitting them makes the device impossible to create
+        // from the Discovery screen (HTTP 422).
+        min: 0,
+        max: 0,
         read_only: true,
         has_feedback: false,
         keep_history: false,
@@ -100,6 +105,8 @@ export function buildSummaryDevice(gladys) {
         external_id: ids.feature(SUMMARY_FEATURE.BRIDGE_ONLINE),
         category: DEVICE_FEATURE_CATEGORIES.INPUT,
         type: DEVICE_FEATURE_TYPES.INPUT.BINARY,
+        min: 0,
+        max: 1,
         read_only: true,
         has_feedback: false,
         keep_history: true,
@@ -130,8 +137,11 @@ export function buildSummaryStates(gladys, summary) {
       state: summary.monitored,
     },
     {
+      // A text feature travels in a `text` field of its own: the host API takes
+      // a numeric `state` OR a string `text`, and rejects the whole batch when
+      // one state carries neither.
       device_feature_external_id: ids.feature(SUMMARY_FEATURE.SILENT_NAMES),
-      state: { text: formatSilentNames(summary.silentDevices) },
+      text: formatSilentNames(summary.silentDevices),
     },
   ];
 

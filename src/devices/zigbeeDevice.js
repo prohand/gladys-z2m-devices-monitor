@@ -51,15 +51,33 @@ export function zigbeeExternalIds(gladys, ieeeAddress) {
 }
 
 /**
+ * Name to show in Gladys for one watched device.
+ *
+ * The raw friendly name is almost always already taken: Gladys usually knows the
+ * same devices through its own Zigbee2MQTT integration, and two entries reading
+ * "office plug" in a scene picker are indistinguishable. The suffix is what
+ * tells the watchdog copy apart — the user can change it, or empty it to keep
+ * the raw name.
+ * @param {object} device - Device entry of a monitor snapshot.
+ * @param {Record<string, unknown>} config - Normalized configuration.
+ * @returns {string} The device name published to Gladys.
+ */
+export function zigbeeDeviceName(device, config = {}) {
+  const suffix = String(config.device_name_suffix ?? '').trim();
+  return suffix ? `${device.friendlyName} ${suffix}` : device.friendlyName;
+}
+
+/**
  * Build the discovery payload of one watched Zigbee device.
  * @param {import('@gladysassistant/integration-sdk').GladysIntegration} gladys - The SDK instance.
  * @param {object} device - Device entry of a monitor snapshot.
+ * @param {Record<string, unknown>} config - Normalized configuration.
  * @returns {object} The device payload sent to Gladys.
  */
-export function buildZigbeeDevice(gladys, device) {
+export function buildZigbeeDevice(gladys, device, config) {
   const ids = zigbeeExternalIds(gladys, device.ieeeAddress);
   return {
-    name: device.friendlyName,
+    name: zigbeeDeviceName(device, config),
     external_id: ids.device,
     model: device.model || undefined,
     features: [
@@ -68,6 +86,11 @@ export function buildZigbeeDevice(gladys, device) {
         external_id: ids.feature(ZIGBEE_FEATURE.ALIVE),
         category: DEVICE_FEATURE_CATEGORIES.PRESENCE_SENSOR,
         type: DEVICE_FEATURE_TYPES.SENSOR.BINARY,
+        // `min`/`max` are optional in the SDK typings but NOT NULL in the Gladys
+        // schema: a feature published without them makes the device impossible
+        // to create from the Discovery screen (HTTP 422). Binary is 0..1.
+        min: 0,
+        max: 1,
         read_only: true,
         has_feedback: false,
         // The one series worth keeping: it is the alert history of the device.

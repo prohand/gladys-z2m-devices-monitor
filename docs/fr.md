@@ -68,6 +68,32 @@ surveiller. Vous en trouverez :
 - un appareil **par appareil Zigbee** connu de Zigbee2MQTT ;
 - un appareil **Zigbee2MQTT monitor**, qui résume tout le réseau.
 
+Les appareils surveillés portent le nom Zigbee2MQTT **suivi d'un suffixe**,
+`(monitor)` par défaut : `prise bureau (monitor)`. Sans lui, ils seraient
+impossibles à distinguer des appareils que l'intégration Zigbee2MQTT de Gladys
+remonte déjà sous le même nom — un sélecteur de scène afficherait deux fois
+« prise bureau ». Le suffixe se change (ou se vide) dans **Nommage des
+appareils**. Il ne s'applique qu'aux appareils créés ensuite : Gladys ne renomme
+jamais un appareil déjà ajouté, à vous de le renommer sur sa fiche.
+
+### Et quand le réseau Zigbee change ?
+
+L'intégration relit l'inventaire de Zigbee2MQTT en continu, donc la liste de
+l'écran **Découvrir** se met à jour toute seule :
+
+- **un appareil que vous venez d'appairer** apparaît dans la liste en quelques
+  secondes, sans redémarrage ni action de votre part. En revanche, sa **création
+  dans Gladys reste manuelle** : c'est vous qui décidez ce qui entre dans votre
+  installation. C'est aussi pourquoi la scène à bâtir est celle de l'appareil
+  **Zigbee2MQTT monitor** — ses compteurs comptent tous les appareils vus par
+  Zigbee2MQTT, y compris ceux que vous n'avez pas créés dans Gladys, donc un
+  nouvel appareil est couvert par l'alerte dès son appairage ;
+- **un appareil retiré de Zigbee2MQTT** disparaît de l'écran **Découvrir** et
+  cesse d'être compté et d'émettre des valeurs. S'il avait déjà été créé dans
+  Gladys, sa fiche **n'est pas supprimée automatiquement** : elle reste, figée
+  sur sa dernière valeur. Une intégration n'a pas le droit de supprimer vos
+  appareils — supprimez-la depuis **Appareils** quand vous le souhaitez.
+
 ## Les seuils de silence
 
 Un appareil est déclaré mort dès qu'il se tait depuis plus longtemps que son

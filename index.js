@@ -176,7 +176,7 @@ function handleMqttMessage(topic, payload, { retained }) {
  * @returns {Promise<number>} How many devices were published.
  */
 async function publishDevices() {
-  const devices = buildDiscoveredDevices(gladys, monitor.snapshot());
+  const devices = buildDiscoveredDevices(gladys, monitor.snapshot(), config);
   // Zigbee2MQTT keeps talking while Gladys is unreachable; publishing then would
   // only fill the logs with failures. The reconnection republishes everything.
   if (!gladys.connected) {

@@ -28,6 +28,13 @@ export const DEFAULT_CONFIG = {
   battery_timeout_minutes: 1440, // battery devices (24 h)
   custom_timeouts: '', // "kitchen sensor=360, 0x00158d0001abcdef=60"
 
+  // --- Naming ---------------------------------------------------------------
+  // Gladys already knows most of these devices under their Zigbee2MQTT friendly
+  // name (through its own Zigbee2MQTT integration), and a scene picker showing
+  // "office plug" twice is unusable. The suffix is what tells the watchdog copy
+  // apart; empty keeps the raw friendly name.
+  device_name_suffix: '(monitor)',
+
   // --- Advanced -------------------------------------------------------------
   ignored_devices: '', // friendly names and/or IEEE addresses, comma separated
   monitor_disabled_devices: false, // devices flagged `disabled` in Zigbee2MQTT
@@ -60,6 +67,7 @@ export function normalizeConfig(raw = {}) {
       DEFAULT_CONFIG.battery_timeout_minutes,
     ),
     custom_timeouts: String(raw.custom_timeouts ?? DEFAULT_CONFIG.custom_timeouts),
+    device_name_suffix: String(raw.device_name_suffix ?? DEFAULT_CONFIG.device_name_suffix).trim(),
     ignored_devices: String(raw.ignored_devices ?? DEFAULT_CONFIG.ignored_devices),
     monitor_disabled_devices: raw.monitor_disabled_devices === true,
     check_interval_seconds: toPositiveNumber(

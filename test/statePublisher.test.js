@@ -24,6 +24,12 @@ const state = (id, value, minIntervalMs) => ({
   minIntervalMs,
 });
 
+const textState = (id, text, minIntervalMs) => ({
+  device_feature_external_id: id,
+  text,
+  minIntervalMs,
+});
+
 test('the first publish sends everything', async () => {
   const { publisher, gladys } = createPublisher();
   assert.equal(await publisher.publish([state('a', 1), state('b', 0)]), 2);
@@ -70,9 +76,21 @@ test('an unchanged value is refreshed once in a while so a screen is never blank
 
 test('text states are compared on their text', async () => {
   const { publisher } = createPublisher();
-  await publisher.publish([state('names', { text: 'office plug' })]);
-  assert.equal(await publisher.publish([state('names', { text: 'office plug' })]), 0);
-  assert.equal(await publisher.publish([state('names', { text: 'office plug, hall' })]), 1);
+  await publisher.publish([textState('names', 'office plug')]);
+  assert.equal(await publisher.publish([textState('names', 'office plug')]), 0);
+  assert.equal(await publisher.publish([textState('names', 'office plug, hall')]), 1);
+});
+
+// The host API takes a numeric `state` or a string `text`, never a wrapper
+// object — and it rejects the WHOLE batch on the first offender, so a mangled
+// text state would take the states of the entire network down with it.
+test('a text state reaches the host API in its own text field', async () => {
+  const { publisher, gladys } = createPublisher();
+  await publisher.publish([state('a', 1), textState('names', 'office plug')]);
+  assert.deepEqual(gladys.batches[0], [
+    { device_feature_external_id: 'a', state: 1 },
+    { device_feature_external_id: 'names', text: 'office plug' },
+  ]);
 });
 
 test('batches are chunked to the 100 states the host API accepts', async () => {
