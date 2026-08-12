@@ -67,6 +67,14 @@ find:
 - one device **per Zigbee device** known to Zigbee2MQTT;
 - one **Zigbee2MQTT monitor** device summarizing the whole network.
 
+Watched devices carry their Zigbee2MQTT name **followed by a suffix**,
+`(monitor)` by default: `office plug (monitor)`. Without it they would be
+impossible to tell apart from the devices Gladys already exposes under the very
+same name through its own Zigbee2MQTT integration — a scene picker would show
+"office plug" twice. Change it (or empty it) under **Device naming**. It only
+applies to the devices you create afterwards: Gladys never renames a device you
+already added, rename it yourself on its page.
+
 ### What happens when the Zigbee network changes?
 
 The integration keeps re-reading the Zigbee2MQTT inventory, so the **Discover**

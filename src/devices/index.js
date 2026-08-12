@@ -21,6 +21,7 @@ export {
 export {
   buildZigbeeDevice,
   buildZigbeeDeviceStates,
+  zigbeeDeviceName,
   zigbeeExternalIds,
   ZIGBEE_FEATURE,
 } from './zigbeeDevice.js';
@@ -34,14 +35,15 @@ export {
  * should not show up in the "add a device" screen at all.
  * @param {import('@gladysassistant/integration-sdk').GladysIntegration} gladys - The SDK instance.
  * @param {object} snapshot - A `DevicesMonitor.snapshot()` result.
+ * @param {Record<string, unknown>} config - Normalized configuration (it carries the device naming).
  * @returns {Array<object>} The devices to publish to Gladys.
  */
-export function buildDiscoveredDevices(gladys, snapshot) {
+export function buildDiscoveredDevices(gladys, snapshot, config) {
   return [
     buildSummaryDevice(gladys),
     ...snapshot.devices
       .filter((device) => device.monitored)
-      .map((device) => buildZigbeeDevice(gladys, device)),
+      .map((device) => buildZigbeeDevice(gladys, device, config)),
   ];
 }
 

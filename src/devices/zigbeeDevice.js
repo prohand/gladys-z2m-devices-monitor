@@ -51,15 +51,33 @@ export function zigbeeExternalIds(gladys, ieeeAddress) {
 }
 
 /**
+ * Name to show in Gladys for one watched device.
+ *
+ * The raw friendly name is almost always already taken: Gladys usually knows the
+ * same devices through its own Zigbee2MQTT integration, and two entries reading
+ * "office plug" in a scene picker are indistinguishable. The suffix is what
+ * tells the watchdog copy apart — the user can change it, or empty it to keep
+ * the raw name.
+ * @param {object} device - Device entry of a monitor snapshot.
+ * @param {Record<string, unknown>} config - Normalized configuration.
+ * @returns {string} The device name published to Gladys.
+ */
+export function zigbeeDeviceName(device, config = {}) {
+  const suffix = String(config.device_name_suffix ?? '').trim();
+  return suffix ? `${device.friendlyName} ${suffix}` : device.friendlyName;
+}
+
+/**
  * Build the discovery payload of one watched Zigbee device.
  * @param {import('@gladysassistant/integration-sdk').GladysIntegration} gladys - The SDK instance.
  * @param {object} device - Device entry of a monitor snapshot.
+ * @param {Record<string, unknown>} config - Normalized configuration.
  * @returns {object} The device payload sent to Gladys.
  */
-export function buildZigbeeDevice(gladys, device) {
+export function buildZigbeeDevice(gladys, device, config) {
   const ids = zigbeeExternalIds(gladys, device.ieeeAddress);
   return {
-    name: device.friendlyName,
+    name: zigbeeDeviceName(device, config),
     external_id: ids.device,
     model: device.model || undefined,
     features: [

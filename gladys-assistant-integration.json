@@ -137,6 +137,30 @@
       "default": ""
     },
     {
+      "key": "naming",
+      "type": "section",
+      "label": { "en": "Device naming", "fr": "Nommage des appareils" },
+      "description": {
+        "en": "Gladys most likely already knows these devices under their Zigbee2MQTT name, through its own Zigbee2MQTT integration. Without a suffix, a scene picker shows the same name twice with no way to tell which is which.",
+        "fr": "Gladys connaît très probablement déjà ces appareils sous leur nom Zigbee2MQTT, via sa propre intégration Zigbee2MQTT. Sans suffixe, un sélecteur de scène affiche deux fois le même nom sans moyen de les distinguer."
+      }
+    },
+    {
+      "key": "device_name_suffix",
+      "type": "string",
+      "label": {
+        "en": "Suffix added to device names",
+        "fr": "Suffixe ajouté aux noms d'appareils"
+      },
+      "description": {
+        "en": "Appended to the Zigbee2MQTT name of each watched device, e.g. \"office plug (monitor)\". Leave empty to keep the raw name. Only affects the devices you create afterwards: Gladys never renames a device you already added.",
+        "fr": "Ajouté au nom Zigbee2MQTT de chaque appareil surveillé, par exemple « prise bureau (monitor) ». Laissez vide pour garder le nom brut. N'affecte que les appareils créés ensuite : Gladys ne renomme jamais un appareil déjà ajouté."
+      },
+      "placeholder": { "en": "(monitor)", "fr": "(monitor)" },
+      "required": false,
+      "default": "(monitor)"
+    },
+    {
       "key": "advanced",
       "type": "section",
       "label": { "en": "Advanced", "fr": "Avancé" }

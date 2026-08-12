@@ -27,6 +27,9 @@ import {
 } from './helpers/z2mFixtures.js';
 
 const gladys = createFakeGladys();
+// The configuration the discovery payloads are built from (it carries the device
+// naming). The tests that care about naming pass their own.
+const config = normalizeConfig();
 
 /**
  * Build a monitor fed with the fixture network.
@@ -50,16 +53,26 @@ function stateOf(states, externalId) {
   return states.find((state) => state.device_feature_external_id === externalId)?.state;
 }
 
+/**
+ * Read the text of one feature out of a candidate state list.
+ * @param {Array<object>} states - Candidate states.
+ * @param {string} externalId - Feature external id.
+ * @returns {unknown} The text, or undefined.
+ */
+function textOf(states, externalId) {
+  return states.find((state) => state.device_feature_external_id === externalId)?.text;
+}
+
 test('the discovery list holds the summary device plus the watched devices', () => {
   const { monitor } = createMonitor();
-  const devices = buildDiscoveredDevices(gladys, monitor.snapshot());
+  const devices = buildDiscoveredDevices(gladys, monitor.snapshot(), config);
   assert.equal(devices.length, 3, 'summary + 2 watched devices (the disabled one is left out)');
   assert.equal(devices[0].external_id, summaryExternalIds(gladys).device);
 });
 
 test('excluded devices never reach the "add a device" screen', () => {
   const { monitor } = createMonitor({ ignored_devices: 'kitchen/motion' });
-  const ids = buildDiscoveredDevices(gladys, monitor.snapshot()).map((d) => d.external_id);
+  const ids = buildDiscoveredDevices(gladys, monitor.snapshot(), config).map((d) => d.external_id);
   assert.equal(ids.includes(zigbeeExternalIds(gladys, MOTION_IEEE).device), false);
   assert.equal(ids.includes(zigbeeExternalIds(gladys, DISABLED_IEEE).device), false);
   assert.equal(ids.includes(zigbeeExternalIds(gladys, PLUG_IEEE).device), true);
@@ -67,7 +80,7 @@ test('excluded devices never reach the "add a device" screen', () => {
 
 test('every published device carries a name, an external id and features', () => {
   const { monitor } = createMonitor();
-  for (const device of buildDiscoveredDevices(gladys, monitor.snapshot())) {
+  for (const device of buildDiscoveredDevices(gladys, monitor.snapshot(), config)) {
     assert.equal(typeof device.name, 'string');
     assert.ok(device.name.length > 0);
     assert.ok(device.external_id);
@@ -86,7 +99,7 @@ test('every published device carries a name, an external id and features', () =>
 // Discovery screen, with an HTTP 422 naming a column instead of a device.
 test('every published feature carries the min/max Gladys requires', () => {
   const { monitor } = createMonitor();
-  for (const device of buildDiscoveredDevices(gladys, monitor.snapshot())) {
+  for (const device of buildDiscoveredDevices(gladys, monitor.snapshot(), config)) {
     for (const feature of device.features) {
       assert.equal(
         typeof feature.min,
@@ -108,7 +121,7 @@ test('every published feature carries the min/max Gladys requires', () => {
 
 test('device and feature external ids are unique across the catalog', () => {
   const { monitor } = createMonitor();
-  const devices = buildDiscoveredDevices(gladys, monitor.snapshot());
+  const devices = buildDiscoveredDevices(gladys, monitor.snapshot(), config);
   const deviceIds = devices.map((device) => device.external_id);
   assert.equal(new Set(deviceIds).size, deviceIds.length);
   const featureIds = devices.flatMap((device) => device.features.map((f) => f.external_id));
@@ -119,25 +132,46 @@ test('device and feature external ids are unique across the catalog', () => {
 // would orphan its history in Gladys every time.
 test('devices are keyed on the IEEE address, not on the friendly name', () => {
   const { monitor } = createMonitor();
-  const before = buildDiscoveredDevices(gladys, monitor.snapshot());
+  const before = buildDiscoveredDevices(gladys, monitor.snapshot(), config);
 
   const renamed = BRIDGE_DEVICES_PAYLOAD.map((entry) =>
     entry.ieee_address === PLUG_IEEE ? { ...entry, friendly_name: 'hallway plug' } : entry,
   );
   monitor.setZ2mDevices(parseBridgeDevices(renamed));
-  const after = buildDiscoveredDevices(gladys, monitor.snapshot());
+  const after = buildDiscoveredDevices(gladys, monitor.snapshot(), config);
 
   assert.deepEqual(
     after.map((device) => device.external_id).sort(),
     before.map((device) => device.external_id).sort(),
   );
   const plug = after.find((d) => d.external_id === zigbeeExternalIds(gladys, PLUG_IEEE).device);
-  assert.equal(plug.name, 'hallway plug', 'the new name is picked up');
+  assert.equal(plug.name, 'hallway plug (monitor)', 'the new name is picked up');
+});
+
+// Gladys usually already knows these devices under the very same name, through
+// its own Zigbee2MQTT integration: published raw, they are indistinguishable
+// from the real ones in every device and scene picker.
+test('device names are suffixed so they never collide with the Zigbee2MQTT ones', () => {
+  const { monitor } = createMonitor();
+  const snapshot = monitor.snapshot();
+  const ids = zigbeeExternalIds(gladys, PLUG_IEEE);
+
+  const withDefault = buildDiscoveredDevices(gladys, snapshot, config);
+  assert.equal(withDefault.find((d) => d.external_id === ids.device).name, 'office plug (monitor)');
+
+  const custom = normalizeConfig({ device_name_suffix: '[watchdog]' });
+  const withCustom = buildDiscoveredDevices(gladys, snapshot, custom);
+  assert.equal(withCustom.find((d) => d.external_id === ids.device).name, 'office plug [watchdog]');
+
+  // Emptying the field is how the user asks for the raw Zigbee2MQTT name back.
+  const noSuffix = normalizeConfig({ device_name_suffix: '' });
+  const withNone = buildDiscoveredDevices(gladys, snapshot, noSuffix);
+  assert.equal(withNone.find((d) => d.external_id === ids.device).name, 'office plug');
 });
 
 test('the alive feature is a binary presence sensor kept in history', () => {
   const { monitor } = createMonitor();
-  const devices = buildDiscoveredDevices(gladys, monitor.snapshot());
+  const devices = buildDiscoveredDevices(gladys, monitor.snapshot(), config);
   const plug = devices.find((d) => d.external_id === zigbeeExternalIds(gladys, PLUG_IEEE).device);
   const alive = plug.features.find(
     (f) => f.external_id === zigbeeExternalIds(gladys, PLUG_IEEE).feature(ZIGBEE_FEATURE.ALIVE),
@@ -151,7 +185,7 @@ test('the alive feature is a binary presence sensor kept in history', () => {
 test('the silence feature is a duration in minutes', () => {
   const { monitor } = createMonitor();
   const ids = zigbeeExternalIds(gladys, PLUG_IEEE);
-  const plug = buildDiscoveredDevices(gladys, monitor.snapshot()).find(
+  const plug = buildDiscoveredDevices(gladys, monitor.snapshot(), config).find(
     (d) => d.external_id === ids.device,
   );
   const silence = plug.features.find((f) => f.external_id === ids.feature(ZIGBEE_FEATURE.SILENCE));
@@ -219,9 +253,26 @@ test('the summary counts the network and names the silent devices', () => {
   assert.equal(stateOf(states, ids.feature(SUMMARY_FEATURE.DEVICES_SILENT)), 1);
   assert.equal(stateOf(states, ids.feature(SUMMARY_FEATURE.DEVICES_ALIVE)), 1);
   assert.equal(stateOf(states, ids.feature(SUMMARY_FEATURE.BRIDGE_ONLINE)), 1);
-  assert.deepEqual(stateOf(states, ids.feature(SUMMARY_FEATURE.SILENT_NAMES)), {
-    text: 'office plug',
-  });
+  assert.equal(textOf(states, ids.feature(SUMMARY_FEATURE.SILENT_NAMES)), 'office plug');
+});
+
+// The host API validates the whole batch before saving any of it: one state
+// carrying neither a numeric `state` nor a string `text` costs the entire
+// network its update, and every feature reads "no recent value" in the UI.
+test('every candidate state carries the shape the host API accepts', () => {
+  const { monitor, clock } = createMonitor({ default_timeout_minutes: 60 });
+  monitor.recordActivity('office plug', { linkQuality: 96 });
+  monitor.setBridgeOnline(true);
+  clock.advanceMinutes(75);
+
+  for (const state of buildAllStates(gladys, monitor.snapshot())) {
+    const hasState = typeof state.state === 'number' && Number.isFinite(state.state);
+    const hasText = typeof state.text === 'string';
+    assert.ok(
+      hasState !== hasText,
+      `${state.device_feature_external_id}: exactly one of "state" (number) or "text" (string)`,
+    );
+  }
 });
 
 // "Unknown" is not "offline": publishing a 0 before the bridge said anything

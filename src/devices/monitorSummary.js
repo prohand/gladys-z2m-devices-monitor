@@ -137,8 +137,11 @@ export function buildSummaryStates(gladys, summary) {
       state: summary.monitored,
     },
     {
+      // A text feature travels in a `text` field of its own: the host API takes
+      // a numeric `state` OR a string `text`, and rejects the whole batch when
+      // one state carries neither.
       device_feature_external_id: ids.feature(SUMMARY_FEATURE.SILENT_NAMES),
-      state: { text: formatSilentNames(summary.silentDevices) },
+      text: formatSilentNames(summary.silentDevices),
     },
   ];
 

@@ -68,6 +68,14 @@ surveiller. Vous en trouverez :
 - un appareil **par appareil Zigbee** connu de Zigbee2MQTT ;
 - un appareil **Zigbee2MQTT monitor**, qui résume tout le réseau.
 
+Les appareils surveillés portent le nom Zigbee2MQTT **suivi d'un suffixe**,
+`(monitor)` par défaut : `prise bureau (monitor)`. Sans lui, ils seraient
+impossibles à distinguer des appareils que l'intégration Zigbee2MQTT de Gladys
+remonte déjà sous le même nom — un sélecteur de scène afficherait deux fois
+« prise bureau ». Le suffixe se change (ou se vide) dans **Nommage des
+appareils**. Il ne s'applique qu'aux appareils créés ensuite : Gladys ne renomme
+jamais un appareil déjà ajouté, à vous de le renommer sur sa fiche.
+
 ### Et quand le réseau Zigbee change ?
 
 L'intégration relit l'inventaire de Zigbee2MQTT en continu, donc la liste de
