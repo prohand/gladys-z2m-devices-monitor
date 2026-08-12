@@ -209,13 +209,22 @@ including the devices you will pair six months from now.
 1. **Scenes → New scene**;
 2. trigger: **A device value changes** → device _Zigbee2MQTT monitor_, feature
    **Silent devices**, condition _greater than_ `0`;
-3. action: **Send a message** (mobile notification, Telegram…) with something
-   like:
+3. first action: **Get device value** → under _Select a device_, pick
+   **Zigbee2MQTT monitor (Text)**, i.e. the **Silent device names** feature.
 
-   > Zigbee device(s) with no sign of life: {{device.z2m-monitor-silent-names}}
+   This is the step everyone forgets: in Gladys a message can only insert values
+   fetched by an action placed **before** it. Without this box the message's
+   variable picker is empty, and the alert cannot name the sensors involved;
 
-   Use the picker offered by the scene editor to insert the **Silent device
-   names** feature — it appears there as **Zigbee2MQTT monitor (Text)**: the
+4. second action: **Send a message** (mobile notification, Telegram…) with
+   something like:
+
+   > Zigbee device(s) with no sign of life: _Device last value_
+
+   To insert that variable, type `{{` where you want it in the message: Gladys
+   then offers the value fetched in step 3, shown as "1.1. Device last value"
+   (the number is the position of the _Get device value_ action in the scene).
+   Always go through that picker rather than typing the variable by hand: the
    message will name the sensors involved instead of just saying something is
    wrong.
 
