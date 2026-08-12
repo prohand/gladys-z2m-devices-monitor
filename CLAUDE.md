@@ -102,6 +102,12 @@ them):
   still republished every `refreshMs` (30 min) so a device screen is never blank.
 - Gladys drops states for features the user hasn't created yet, while the publisher believes them
   delivered — hence `publisher.forgetDevice()` on `onDeviceCreated` / `onDeviceUpdated`.
+- A category/type pair the front does not know is accepted by the API and then drawn as an empty,
+  unlabelled tag: the feature is invisible on the Discovery screen and the device looks like it only
+  carries the other one. `presence-sensor` + `binary` is exactly that trap up to Gladys 4.85.0 (fixed
+  on master, hence "works on my dev instance"), which is why `Alive` is an `input` + `binary`. Every
+  pair published here must have both an icon in the front's `DeviceFeatureCategoriesIcon` and a
+  `deviceFeatureCategory.<category>.<type>` label in the oldest Gladys the manifest supports.
 
 **Sandbox.** The rootfs is read-only; `/data` (overridable via `GLADYS_DATA_DIR`) is the only
 writable path. Writes are atomic (tmp + rename) and best-effort: a failure degrades the integration

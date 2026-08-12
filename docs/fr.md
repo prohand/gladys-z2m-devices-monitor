@@ -151,10 +151,17 @@ quelques jours, regardez la valeur « Silence » de chaque appareil sur sa fiche
 
 Chaque appareil surveillé expose **2 fonctionnalités** :
 
-| Fonctionnalité | Nom affiché par Gladys       | Description                                                                                                                                                      |
-| -------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Alive**      | _Détection présence Oui/Non_ | 1 = l'appareil donne signe de vie, 0 = il se tait depuis plus que son seuil. C'est la fonctionnalité sur laquelle bâtir une alerte. Son historique est conservé. |
-| **Silence**    | _Durée (entier)_             | Depuis combien de minutes l'appareil n'a rien dit. Utile pour calibrer les seuils.                                                                               |
+| Fonctionnalité | Nom affiché par Gladys | Description                                                                                                                                                         |
+| -------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Alive**      | _Etat de l'entrée_     | On = l'appareil donne signe de vie, Off = il se tait depuis plus que son seuil. C'est la fonctionnalité sur laquelle bâtir une alerte. Son historique est conservé. |
+| **Silence**    | _Durée (entier)_       | Depuis combien de minutes l'appareil n'a rien dit. Utile pour calibrer les seuils.                                                                                  |
+
+Si vous avez ajouté vos appareils avec la version 1.0.1 ou antérieure, leur
+fonctionnalité **Alive** était publiée dans une autre catégorie, que les écrans
+de Gladys dessinent sous la forme d'une étiquette vide — l'appareil semble ne
+porter que **Silence**. L'écran de découverte propose un bouton **Mettre à jour**
+sur ces appareils : cliquez-le et la fonctionnalité réapparaît, historique
+compris.
 
 L'appareil **Zigbee2MQTT monitor** expose de son côté **5 fonctionnalités** :
 
@@ -171,8 +178,8 @@ L'appareil **Zigbee2MQTT monitor** expose de son côté **5 fonctionnalités** :
 Gladys ne montre pas toujours le nom donné par l'intégration. Quand une
 fonctionnalité est **la seule de son type sur son appareil**, l'interface affiche
 à la place le libellé standard de sa catégorie — d'où _Texte_ pour « Silent
-device names », _Etat de l'entrée_ pour « Zigbee2MQTT bridge online », ou
-_Compteur entier_ sur l'écran de modification de l'appareil. Les trois compteurs
+device names », _Etat de l'entrée_ pour « Alive » et « Zigbee2MQTT bridge
+online », ou _Compteur entier_ sur l'écran de modification. Les trois compteurs
 du moniteur partagent le même type, donc ils gardent leur nom.
 
 C'est un comportement de Gladys, pas un réglage de cette intégration. Deux
@@ -221,8 +228,8 @@ y compris les appareils que vous appairerez dans six mois.
    lieu de dire simplement que quelque chose ne va pas.
 
 Pour un capteur critique en particulier (détecteur de fumée, alarme, congélateur),
-créez en plus une scène dédiée sur sa fonctionnalité **Alive** passant à 0 (dans
-le sélecteur : _nom de l'appareil (Détection présence Oui/Non)_).
+créez en plus une scène dédiée sur sa fonctionnalité **Alive** passant à Off (dans
+le sélecteur : _nom de l'appareil (Etat de l'entrée)_).
 
 Astuce : ajoutez une condition d'horaire à la scène si vous ne voulez pas être
 réveillé la nuit — un capteur muet peut presque toujours attendre le matin.

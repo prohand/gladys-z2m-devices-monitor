@@ -147,10 +147,16 @@ tighten.
 
 Every watched device exposes **2 features**:
 
-| Feature     | Name displayed by Gladys | Description                                                                                                                                                  |
-| ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Alive**   | _Presence (binary)_      | 1 = the device is giving signs of life, 0 = it has been silent for longer than its threshold. This is the feature to build an alert on. Its history is kept. |
-| **Silence** | _Duration (integer)_     | How many minutes the device has been quiet. Useful to size the thresholds.                                                                                   |
+| Feature     | Name displayed by Gladys | Description                                                                                                                                                     |
+| ----------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Alive**   | _State of input_         | On = the device is giving signs of life, Off = it has been silent for longer than its threshold. This is the feature to build an alert on. Its history is kept. |
+| **Silence** | _Duration (integer)_     | How many minutes the device has been quiet. Useful to size the thresholds.                                                                                      |
+
+If you added your devices with version 1.0.1 or earlier, their **Alive** feature
+was published in another category, which the Gladys screens draw as an empty tag
+— it looks as if the device only carries **Silence**. The Discovery screen offers
+an **Update** button on each of those devices: click it and the feature comes
+back, history included.
 
 The **Zigbee2MQTT monitor** device exposes **5 features**:
 
@@ -167,8 +173,9 @@ The **Zigbee2MQTT monitor** device exposes **5 features**:
 Gladys does not always show the name the integration gave a feature. When a
 feature is **the only one of its type on its device**, the UI shows the standard
 label of its category instead — hence _Text_ for "Silent device names", _State
-of input_ for "Zigbee2MQTT bridge online", or _Counter (integer)_ on the device
-edit screen. The three monitor counters share the same type, so they keep their names.
+of input_ for "Alive" and for "Zigbee2MQTT bridge online", or _Counter (integer)_
+on the device edit screen. The three monitor counters share the same type, so
+they keep their names.
 
 This is Gladys behaviour, not a setting of this integration. Two practical
 consequences:
@@ -213,8 +220,8 @@ including the devices you will pair six months from now.
    wrong.
 
 For one particularly critical sensor (smoke detector, alarm, freezer), add a
-dedicated scene on its **Alive** feature turning to 0 (in the picker: _device
-name (Presence (binary))_).
+dedicated scene on its **Alive** feature turning to Off (in the picker: _device
+name (State of input)_).
 
 Tip: add a time condition to the scene if you would rather not be woken up at
 night — a silent sensor can almost always wait until morning.
