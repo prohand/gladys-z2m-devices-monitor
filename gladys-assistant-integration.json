@@ -1,0 +1,200 @@
+{
+  "manifest_version": 1,
+  "type": "device",
+  "name": "Z2M Devices Monitor",
+  "description": {
+    "en": "Alerts you when a Zigbee2MQTT device stops giving signs of life.",
+    "fr": "Vous alerte quand un appareil Zigbee2MQTT ne donne plus signe de vie."
+  },
+  "version": "1.0.0",
+  "docker_image": "ghcr.io/prohand/gladys-z2m-devices-monitor:1.0.0",
+  "gladys_version": ">=4.85.0",
+  "cover_image": "https://raw.githubusercontent.com/prohand/gladys-z2m-devices-monitor/main/cover.jpg",
+  "transports": ["local"],
+  "config_schema": [
+    {
+      "key": "intro",
+      "type": "section",
+      "label": { "en": "How it works", "fr": "Comment ça marche" },
+      "description": {
+        "en": "A Zigbee device that is alive talks. This integration listens to everything Zigbee2MQTT publishes, remembers when each device last spoke, and flags the ones that have been silent for too long. It never uses the battery level: a Zigbee battery percentage is a coarse estimate that often reads 100% right up to the day the sensor stops answering.",
+        "fr": "Un appareil Zigbee vivant parle. Cette intégration écoute tout ce que publie Zigbee2MQTT, mémorise la dernière fois que chaque appareil s'est manifesté, et signale ceux qui se taisent depuis trop longtemps. Elle n'utilise jamais le niveau de batterie : un pourcentage de batterie Zigbee est une estimation grossière, souvent à 100% jusqu'au jour où le capteur cesse de répondre."
+      },
+      "links": [
+        {
+          "url": "https://www.zigbee2mqtt.io/guide/usage/mqtt_topics_and_messages.html",
+          "label": {
+            "en": "Zigbee2MQTT MQTT topics",
+            "fr": "Topics MQTT de Zigbee2MQTT"
+          }
+        }
+      ]
+    },
+    {
+      "key": "broker",
+      "type": "section",
+      "label": { "en": "MQTT broker", "fr": "Broker MQTT" },
+      "description": {
+        "en": "The same broker Zigbee2MQTT publishes on. The integration only ever subscribes: it never publishes anything to your Zigbee network.",
+        "fr": "Le même broker que celui utilisé par Zigbee2MQTT. L'intégration ne fait que s'abonner : elle ne publie jamais rien sur votre réseau Zigbee."
+      }
+    },
+    {
+      "key": "mqtt_url",
+      "type": "string",
+      "label": { "en": "Broker URL", "fr": "URL du broker" },
+      "description": {
+        "en": "Address of the MQTT broker, e.g. mqtt://192.168.1.10:1883 (mqtts:// and ws:// are supported too).",
+        "fr": "Adresse du broker MQTT, par exemple mqtt://192.168.1.10:1883 (mqtts:// et ws:// sont aussi acceptés)."
+      },
+      "placeholder": { "en": "mqtt://192.168.1.10:1883", "fr": "mqtt://192.168.1.10:1883" },
+      "required": true,
+      "default": "mqtt://localhost:1883"
+    },
+    {
+      "key": "mqtt_username",
+      "type": "string",
+      "label": { "en": "Username", "fr": "Nom d'utilisateur" },
+      "description": {
+        "en": "Leave empty if your broker allows anonymous connections.",
+        "fr": "Laissez vide si votre broker accepte les connexions anonymes."
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "mqtt_password",
+      "type": "secret",
+      "label": { "en": "Password", "fr": "Mot de passe" },
+      "required": false
+    },
+    {
+      "key": "base_topic",
+      "type": "string",
+      "label": { "en": "Base topic", "fr": "Topic de base" },
+      "description": {
+        "en": "The base topic configured in Zigbee2MQTT (mqtt.base_topic).",
+        "fr": "Le topic de base configuré dans Zigbee2MQTT (mqtt.base_topic)."
+      },
+      "placeholder": { "en": "zigbee2mqtt", "fr": "zigbee2mqtt" },
+      "required": true,
+      "default": "zigbee2mqtt"
+    },
+    {
+      "key": "thresholds",
+      "type": "section",
+      "label": { "en": "Silence thresholds", "fr": "Seuils de silence" },
+      "description": {
+        "en": "A device is declared dead once it has been silent for longer than its threshold. Battery sensors report far less often than mains-powered devices, hence two separate defaults. Start generous: it is better to be alerted a few hours late than to be woken up by a false alarm.",
+        "fr": "Un appareil est déclaré mort dès qu'il se tait depuis plus longtemps que son seuil. Les capteurs sur pile parlent bien moins souvent que les appareils sur secteur, d'où deux valeurs par défaut distinctes. Commencez large : mieux vaut être alerté quelques heures trop tard que réveillé par une fausse alerte."
+      }
+    },
+    {
+      "key": "default_timeout_minutes",
+      "type": "number",
+      "label": {
+        "en": "Threshold for mains-powered devices (min)",
+        "fr": "Seuil pour les appareils sur secteur (min)"
+      },
+      "description": {
+        "en": "Applies to plugs, bulbs and routers, which report often.",
+        "fr": "S'applique aux prises, ampoules et routeurs, qui parlent souvent."
+      },
+      "required": false,
+      "default": 120,
+      "min": 5,
+      "max": 20160
+    },
+    {
+      "key": "battery_timeout_minutes",
+      "type": "number",
+      "label": {
+        "en": "Threshold for battery devices (min)",
+        "fr": "Seuil pour les appareils sur pile (min)"
+      },
+      "description": {
+        "en": "Applies to battery sensors, which sleep most of the time. 1440 minutes is 24 hours.",
+        "fr": "S'applique aux capteurs sur pile, qui dorment la plupart du temps. 1440 minutes valent 24 heures."
+      },
+      "required": false,
+      "default": 1440,
+      "min": 5,
+      "max": 20160
+    },
+    {
+      "key": "custom_timeouts",
+      "type": "string",
+      "label": { "en": "Per-device thresholds", "fr": "Seuils par appareil" },
+      "description": {
+        "en": "One device=minutes pair per line or separated by commas. The device is designated by its Zigbee2MQTT friendly name or its IEEE address. Example: mailbox sensor=4320, 0x00158d0001abcdef=60",
+        "fr": "Une paire appareil=minutes par ligne ou séparées par des virgules. L'appareil est désigné par son nom convivial Zigbee2MQTT ou son adresse IEEE. Exemple : capteur boite aux lettres=4320, 0x00158d0001abcdef=60"
+      },
+      "placeholder": {
+        "en": "mailbox sensor=4320, garage motion=180",
+        "fr": "capteur boite aux lettres=4320, mouvement garage=180"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "advanced",
+      "type": "section",
+      "label": { "en": "Advanced", "fr": "Avancé" }
+    },
+    {
+      "key": "ignored_devices",
+      "type": "string",
+      "label": { "en": "Devices to ignore", "fr": "Appareils à ignorer" },
+      "description": {
+        "en": "Friendly names or IEEE addresses, separated by commas. Ignored devices are not published to Gladys and never raise an alert.",
+        "fr": "Noms conviviaux ou adresses IEEE, séparés par des virgules. Les appareils ignorés ne sont pas publiés vers Gladys et ne déclenchent jamais d'alerte."
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "monitor_disabled_devices",
+      "type": "boolean",
+      "label": {
+        "en": "Also watch devices disabled in Zigbee2MQTT",
+        "fr": "Surveiller aussi les appareils désactivés dans Zigbee2MQTT"
+      },
+      "description": {
+        "en": "Off by default: a device you disabled on purpose is expected to be silent.",
+        "fr": "Désactivé par défaut : un appareil que vous avez désactivé volontairement est censé se taire."
+      },
+      "required": false,
+      "default": false
+    },
+    {
+      "key": "check_interval_seconds",
+      "type": "number",
+      "label": { "en": "Check interval (s)", "fr": "Intervalle de vérification (s)" },
+      "description": {
+        "en": "How often the silence of every device is re-evaluated.",
+        "fr": "Fréquence de réévaluation du silence de chaque appareil."
+      },
+      "required": false,
+      "default": 60,
+      "min": 10,
+      "max": 3600
+    }
+  ],
+  "actions": [
+    {
+      "key": "test_connection",
+      "label": { "en": "Test the MQTT connection", "fr": "Tester la connexion MQTT" },
+      "timeout_seconds": 15
+    },
+    {
+      "key": "list_silent_devices",
+      "label": { "en": "List the silent devices", "fr": "Lister les appareils silencieux" },
+      "timeout_seconds": 15
+    },
+    {
+      "key": "refresh_devices",
+      "label": { "en": "Refresh the device list", "fr": "Rafraîchir la liste des appareils" },
+      "timeout_seconds": 30
+    }
+  ]
+}
