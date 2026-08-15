@@ -36,6 +36,27 @@ test('every manifest action has a registered handler', () => {
   );
 });
 
+test('declaring catalog categories requires Gladys >= 4.86.0', () => {
+  // `categories` places the integration on the catalog shelves of Gladys 4.86.
+  // The vocabulary itself is filtered by the store indexer (an unknown key is
+  // dropped with a warning, never a rejection); what has to be pinned here is
+  // the coupling: cores older than 4.86.0 validate manifests against a strict
+  // field allowlist and reject any unknown top-level field, so a manifest
+  // carrying `categories` while claiming compatibility below it turns the
+  // catalog's "requires Gladys >= X" filter into a cryptic install failure.
+  assert.ok(
+    manifest.categories.length >= 1 && manifest.categories.length <= 3,
+    'the store accepts 1 to 3 categories',
+  );
+  const minimum = manifest.gladys_version.match(/>=\s*(\d+)\.(\d+)\.\d+/);
+  assert.ok(minimum, 'gladys_version must declare a minimum version');
+  const [, major, minor] = minimum.map(Number);
+  assert.ok(
+    major > 4 || (major === 4 && minor >= 86),
+    `categories requires gladys_version >= 4.86.0, got "${manifest.gladys_version}"`,
+  );
+});
+
 test('config_schema defaults stay consistent with DEFAULT_CONFIG', () => {
   for (const field of manifest.config_schema) {
     if (field.default !== undefined) {

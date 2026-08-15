@@ -122,7 +122,15 @@ image. It's kept in sync with the code by `test/manifest.test.js`, which will fa
 - add a config field without a matching key in `DEFAULT_CONFIG` (`src/config.js`), or let a `default`
   drift from it;
 - give a `section` field a `default`/`required`/`placeholder`, or leak its key into `DEFAULT_CONFIG`;
-- leave any user-facing string without both `en` and `fr`.
+- leave any user-facing string without both `en` and `fr`;
+- declare more than three `categories`, or lower `gladys_version` below `>=4.86.0` while `categories`
+  is declared — a core older than 4.86.0 rejects any manifest field it does not know, so the
+  integration would fail to install instead of being filtered out of the catalog.
+
+`categories` are the catalog shelves the integration sits on (`network` alone here: it watches the
+health of a Zigbee/MQTT network rather than driving a domain of the house — and it bridges no
+protocol of its own, it only listens to one). The vocabulary is the store's, not ours — an unknown
+key is dropped by the indexer with a warning, so a typo silently costs a shelf.
 
 Every user-facing string in the code (action results, connection statuses) is likewise `{en, fr}`.
 User documentation lives in `docs/en.md` and `docs/fr.md` — both mandatory, re-hosted by Gladys, and

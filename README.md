@@ -8,6 +8,9 @@ Built on the official
 and the [`@gladysassistant/integration-sdk`](https://github.com/GladysAssistant/integration-sdk-js).
 
 > User documentation: [English](docs/en.md) · [Français](docs/fr.md)
+>
+> Requires **Gladys ≥ 4.86.0**: the manifest declares its catalog category
+> (`network`), a field older cores reject outright.
 
 ## Why
 
