@@ -10,7 +10,7 @@
   "docker_image": "ghcr.io/prohand/gladys-z2m-devices-monitor:1.0.3",
   "gladys_version": ">=4.86.0",
   "cover_image": "https://raw.githubusercontent.com/prohand/gladys-z2m-devices-monitor/main/cover.jpg",
-  "categories": ["network", "protocols"],
+  "categories": ["network"],
   "transports": ["local"],
   "config_schema": [
     {
