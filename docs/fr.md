@@ -49,11 +49,11 @@ obligatoire.
 
 ### 2. Configuration
 
-| Champ                                | À renseigner                                                                                                                       |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **URL du broker**                    | L'adresse de votre broker MQTT, par exemple `mqtt://192.168.1.10:1883`. Les schémas `mqtts://`, `ws://` et `wss://` sont acceptés. |
-| **Nom d'utilisateur / Mot de passe** | À laisser vides si votre broker accepte les connexions anonymes.                                                                   |
-| **Topic de base**                    | Le `mqtt.base_topic` configuré dans Zigbee2MQTT. `zigbee2mqtt` dans la quasi-totalité des cas.                                     |
+| Champ                                | À renseigner                                                                                                                                                                                                                 |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **URL du broker**                    | L'adresse de votre broker MQTT, par exemple `mqtt://192.168.1.10:1883`. Les schémas `mqtts://`, `ws://` et `wss://` sont acceptés. Saisir l'adresse seule (`192.168.1.10:1884`) fonctionne : `mqtt://` est ajouté pour vous. |
+| **Nom d'utilisateur / Mot de passe** | À laisser vides si votre broker accepte les connexions anonymes.                                                                                                                                                             |
+| **Topic de base**                    | Le `mqtt.base_topic` configuré dans Zigbee2MQTT. `zigbee2mqtt` dans la quasi-totalité des cas.                                                                                                                               |
 
 Cliquez ensuite sur **Tester la connexion MQTT** : le bouton indique s'il est
 connecté, combien d'appareils il voit et combien de messages il a reçus. C'est le

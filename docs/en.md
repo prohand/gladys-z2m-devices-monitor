@@ -48,11 +48,11 @@ required.
 
 ### 2. Configuration
 
-| Field                   | What to fill in                                                                                                                   |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **Broker URL**          | The address of your MQTT broker, e.g. `mqtt://192.168.1.10:1883`. The `mqtts://`, `ws://` and `wss://` schemes are supported too. |
-| **Username / Password** | Leave empty if your broker allows anonymous connections.                                                                          |
-| **Base topic**          | The `mqtt.base_topic` configured in Zigbee2MQTT. `zigbee2mqtt` in almost every case.                                              |
+| Field                   | What to fill in                                                                                                                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Broker URL**          | The address of your MQTT broker, e.g. `mqtt://192.168.1.10:1883`. The `mqtts://`, `ws://` and `wss://` schemes are supported too. Typing the address alone (`192.168.1.10:1884`) works: `mqtt://` is added for you. |
+| **Username / Password** | Leave empty if your broker allows anonymous connections.                                                                                                                                                            |
+| **Base topic**          | The `mqtt.base_topic` configured in Zigbee2MQTT. `zigbee2mqtt` in almost every case.                                                                                                                                |
 
 Then click **Test the MQTT connection**: the button reports whether it is
 connected, how many devices it sees and how many messages it received. It is the
