@@ -48,11 +48,11 @@ required.
 
 ### 2. Configuration
 
-| Field                   | What to fill in                                                                                                                   |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **Broker URL**          | The address of your MQTT broker, e.g. `mqtt://192.168.1.10:1883`. The `mqtts://`, `ws://` and `wss://` schemes are supported too. |
-| **Username / Password** | Leave empty if your broker allows anonymous connections.                                                                          |
-| **Base topic**          | The `mqtt.base_topic` configured in Zigbee2MQTT. `zigbee2mqtt` in almost every case.                                              |
+| Field                   | What to fill in                                                                                                                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Broker URL**          | The address of your MQTT broker, e.g. `mqtt://192.168.1.10:1883`. The `mqtts://`, `ws://` and `wss://` schemes are supported too. Typing the address alone (`192.168.1.10:1884`) works: `mqtt://` is added for you. |
+| **Username / Password** | Leave empty if your broker allows anonymous connections.                                                                                                                                                            |
+| **Base topic**          | The `mqtt.base_topic` configured in Zigbee2MQTT. `zigbee2mqtt` in almost every case.                                                                                                                                |
 
 Then click **Test the MQTT connection**: the button reports whether it is
 connected, how many devices it sees and how many messages it received. It is the
@@ -267,9 +267,17 @@ night — a silent sensor can almost always wait until morning.
 
 ## Troubleshooting
 
-**The test button says it is not connected.** Check the URL (with the port,
-`1883` by default), the credentials, and that the broker accepts connections from
-the Gladys machine.
+**The test button says it is not connected.** Check the URL (with the port —
+`1883` for a standard broker, but **`1884`** for the Mosquitto that Gladys
+installs alongside Zigbee2MQTT), the credentials, and that the broker accepts
+connections from the Gladys machine.
+
+**The error mentions a port or an address you never typed** — something like
+`connect ENETUNREACH 0.0.7.92:1883` while your broker is on `192.168.1.10:1884`.
+That was a broker URL without its `mqtt://` scheme: the URL parser then read
+`192.168.1.10:` as the scheme and `1884` as the host name, and `0.0.7.92` is just
+`1884` read as an IP address. Recent versions add the missing `mqtt://`
+themselves; on an older one, type the scheme in front of the address.
 
 **It is connected, but sees no device.** The base topic probably does not match
 the one Zigbee2MQTT uses. Compare it with `mqtt.base_topic` in your

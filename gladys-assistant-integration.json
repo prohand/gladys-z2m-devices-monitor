@@ -54,8 +54,8 @@
         "fr": "URL du broker"
       },
       "description": {
-        "en": "Address of the MQTT broker, e.g. mqtt://192.168.1.10:1883 (mqtts:// and ws:// are supported too).",
-        "fr": "Adresse du broker MQTT, par exemple mqtt://192.168.1.10:1883 (mqtts:// et ws:// sont aussi acceptés)."
+        "en": "Address of the MQTT broker, e.g. mqtt://192.168.1.10:1883 (mqtts:// and ws:// are supported too). If you leave the scheme out, mqtt:// is assumed. Mind the port: the broker Gladys installs with Zigbee2MQTT listens on 1884, not 1883.",
+        "fr": "Adresse du broker MQTT, par exemple mqtt://192.168.1.10:1883 (mqtts:// et ws:// sont aussi acceptés). Si vous omettez le schéma, mqtt:// est ajouté. Attention au port : le broker que Gladys installe avec Zigbee2MQTT écoute sur 1884, pas 1883."
       },
       "placeholder": {
         "en": "mqtt://192.168.1.10:1883",

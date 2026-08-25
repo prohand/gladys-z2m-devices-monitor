@@ -48,6 +48,46 @@ export const DEFAULT_CONFIG = {
   check_interval_seconds: 60, // how often the alive state is re-evaluated
 };
 
+// URL schemes `mqtt.js` can actually open a stream for. An unknown scheme is not
+// an error there: `connect()` silently falls back to the first protocol it has a
+// builder for (`mqtt`), which is what makes a malformed URL fail so far from its
+// cause — see `normalizeBrokerUrl`.
+const BROKER_SCHEMES = ['mqtt', 'mqtts', 'ws', 'wss', 'tcp', 'ssl', 'tls'];
+
+/**
+ * Make sure the broker URL carries a scheme, because the failure mode of a
+ * scheme-less one is unreadable: Node's legacy URL parser reads `192.168.1.10:1884`
+ * as the protocol `192.168.1.10:` with the host `1884`, `mqtt.js` then falls back
+ * to plain `mqtt` on its default port, and the socket ends up dialing
+ * `0.0.7.92:1883` — `1884` interpreted as a 32-bit IPv4 address. The user sees a
+ * port they never typed and an address that exists nowhere on their network.
+ *
+ * Typing the host alone is the expected mistake here, not an exotic one: the
+ * broker Gladys installs listens on 1884, so the value being copied around is
+ * exactly the kind that turns into a bogus IP when the scheme is dropped.
+ * @param {unknown} raw - Raw value of the `mqtt_url` field.
+ * @returns {string} A URL `mqtt.js` parses the way the user meant it.
+ */
+export function normalizeBrokerUrl(raw) {
+  const value = String(raw ?? '').trim();
+  if (!value) {
+    return DEFAULT_CONFIG.mqtt_url;
+  }
+  // Already `<scheme>://…`: left untouched, including a scheme we do not know
+  // about — the user may be reaching a broker through something we don't list.
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) {
+    return value;
+  }
+  // `mqtt:host:1884` or `mqtt:/host:1884`: right intent, missing slashes.
+  const missingSlashes = value.match(/^([a-z][a-z0-9+.-]*):\/?(?!\/)(.*)$/i);
+  if (missingSlashes && BROKER_SCHEMES.includes(missingSlashes[1].toLowerCase())) {
+    return `${missingSlashes[1].toLowerCase()}://${missingSlashes[2]}`;
+  }
+  // Anything else is a bare `host`, `host:port` or `//host:port`: assume TCP
+  // MQTT, which is what the field is for.
+  return `mqtt://${value.replace(/^\/+/, '')}`;
+}
+
 /**
  * Merge the user configuration with the defaults.
  * @param {Record<string, unknown>} raw - Configuration returned by the SDK.
@@ -58,7 +98,7 @@ export function normalizeConfig(raw = {}) {
     ...DEFAULT_CONFIG,
     ...raw,
     // Force the types: a config filled in a form can arrive as strings.
-    mqtt_url: String(raw.mqtt_url ?? DEFAULT_CONFIG.mqtt_url).trim(),
+    mqtt_url: normalizeBrokerUrl(raw.mqtt_url ?? DEFAULT_CONFIG.mqtt_url),
     mqtt_username: String(raw.mqtt_username ?? DEFAULT_CONFIG.mqtt_username).trim(),
     mqtt_password: String(raw.mqtt_password ?? DEFAULT_CONFIG.mqtt_password),
     // A trailing slash in the base topic would build `zigbee2mqtt//device`.

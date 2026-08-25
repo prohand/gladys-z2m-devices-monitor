@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DEFAULT_CONFIG,
+  normalizeBrokerUrl,
   normalizeConfig,
   parseCustomTimeouts,
   parseDeviceList,
@@ -20,6 +21,42 @@ test('normalizeConfig keeps the user values over the defaults', () => {
   assert.equal(config.mqtt_url, 'mqtt://192.168.1.10:1883');
   assert.equal(config.base_topic, 'zigbee');
   assert.equal(config.default_timeout_minutes, 30);
+});
+
+test('normalizeConfig adds the missing scheme to a host:port broker URL', () => {
+  // Without it, `url.parse` reads `192.168.1.10:` as the protocol and `1884` as
+  // the host: mqtt.js falls back to plain mqtt on 1883 and the socket dials
+  // 0.0.7.92 (1884 read as a 32-bit IPv4 address).
+  assert.equal(normalizeBrokerUrl('192.168.1.10:1884'), 'mqtt://192.168.1.10:1884');
+  assert.equal(
+    normalizeConfig({ mqtt_url: ' 192.168.1.10:1884 ' }).mqtt_url,
+    'mqtt://192.168.1.10:1884',
+  );
+});
+
+test('normalizeBrokerUrl repairs a scheme typed without its slashes', () => {
+  assert.equal(normalizeBrokerUrl('mqtt:192.168.1.10:1884'), 'mqtt://192.168.1.10:1884');
+  assert.equal(normalizeBrokerUrl('MQTTS:/broker.lan:8883'), 'mqtts://broker.lan:8883');
+  assert.equal(normalizeBrokerUrl('//192.168.1.10:1884'), 'mqtt://192.168.1.10:1884');
+});
+
+test('normalizeBrokerUrl leaves a well-formed URL alone', () => {
+  for (const url of [
+    'mqtt://192.168.1.10:1884',
+    'mqtts://broker.lan:8883',
+    'ws://192.168.1.10:9001/mqtt',
+    'mqtt://user:pass@192.168.1.10:1884',
+    'mqtt://[::1]:1883',
+  ]) {
+    assert.equal(normalizeBrokerUrl(url), url);
+  }
+});
+
+test('normalizeBrokerUrl falls back to the default for an empty field', () => {
+  for (const value of ['', '   ', null, undefined]) {
+    assert.equal(normalizeBrokerUrl(value), DEFAULT_CONFIG.mqtt_url);
+  }
+  assert.equal(normalizeConfig({ mqtt_url: '' }).mqtt_url, DEFAULT_CONFIG.mqtt_url);
 });
 
 test('normalizeConfig coerces the numeric strings a form sends', () => {
