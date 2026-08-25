@@ -280,18 +280,9 @@ réveillé la nuit — un capteur muet peut presque toujours attendre le matin.
 
 ## En cas de problème
 
-**Le bouton de test dit qu'il n'est pas connecté.** Vérifiez l'URL (avec le
-port — `1883` pour un broker standard, mais **`1884`** pour le Mosquitto que
-Gladys installe avec Zigbee2MQTT), les identifiants, et que le broker autorise
-les connexions depuis l'adresse de Gladys.
-
-**L'erreur mentionne un port ou une adresse que vous n'avez jamais saisis** — par
-exemple `connect ENETUNREACH 0.0.7.92:1883` alors que votre broker est sur
-`192.168.1.10:1884`. C'était une URL de broker sans son schéma `mqtt://` : l'analyseur
-d'URL a alors lu `192.168.1.10:` comme le schéma et `1884` comme le nom d'hôte, et
-`0.0.7.92` n'est que `1884` interprété comme une adresse IP. Les versions récentes
-ajoutent le `mqtt://` manquant ; sur une version plus ancienne, saisissez le schéma
-devant l'adresse.
+**Le bouton de test dit qu'il n'est pas connecté.** Vérifiez l'URL (avec le port,
+`1883` par défaut), les identifiants, et que le broker autorise les connexions
+depuis l'adresse de Gladys.
 
 **Il est connecté, mais ne voit aucun appareil.** Le topic de base ne correspond
 probablement pas à celui de Zigbee2MQTT. Comparez-le avec `mqtt.base_topic` dans
