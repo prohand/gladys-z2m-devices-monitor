@@ -26,7 +26,10 @@ import { LastSeenStore } from './src/lastSeenStore.js';
 import { routeMessage } from './src/messageRouter.js';
 import { MqttConnection, sameBrokerConfig } from './src/mqttClient.js';
 import { DevicesMonitor } from './src/monitor.js';
+import { SCENE_ACTION, buildSceneEvents, getDeviceStatus, getSilentDevices } from './src/scenes.js';
 import { StatePublisher } from './src/statePublisher.js';
+import { AliveTransitions } from './src/transitions.js';
+import { WIDGET, buildNetworkHealthWidget, networkHealthSignature } from './src/widget.js';
 
 // Zigbee2MQTT republishes its whole inventory on any change; coalesce the bursts
 // (a re-pairing emits several in a row) into a single discovery publish.
@@ -46,6 +49,7 @@ let config = normalizeConfig();
 const monitor = new DevicesMonitor({ config });
 const store = new LastSeenStore();
 const publisher = new StatePublisher({ gladys });
+const transitions = new AliveTransitions();
 
 /** @type {MqttConnection | null} */
 let mqtt = null;
@@ -58,6 +62,7 @@ const createdDevices = new Set();
 let mqttStartedAt = null;
 let lastConnectionStatus = null;
 let historyRestored = false;
+let widgetSignature = null;
 
 // --- Discovery: Gladys asks for the list of devices --------------------------
 gladys.onScanRequest(async () => {
@@ -88,6 +93,21 @@ gladys.onDeviceUpdated((device) => {
 gladys.onAction('test_connection', () => testConnection({ mqtt, monitor, config }));
 gladys.onAction('list_silent_devices', () => listSilentDevices({ monitor }));
 gladys.onAction('refresh_devices', () => refreshDevices({ monitor, publishDevices }));
+
+// --- Scene actions: blocks of the Gladys scene editor (Gladys >= 5.1.0) ------
+// Read-only answers from the monitor. Never fire a scene event from here: a
+// scene bound to that event would loop through the integration.
+gladys.onSceneAction(SCENE_ACTION.GET_SILENT_DEVICES, (fields) =>
+  getSilentDevices({ monitor, config }, fields),
+);
+gladys.onSceneAction(SCENE_ACTION.GET_DEVICE_STATUS, (fields) =>
+  getDeviceStatus({ gladys, monitor }, fields),
+);
+
+// --- Dashboard widget (Gladys >= 5.1.0) ---------------------------------------
+gladys.onWidgetGet(WIDGET.NETWORK_HEALTH, ({ settings }) =>
+  buildNetworkHealthWidget(monitor.snapshot(), settings),
+);
 
 // --- Configuration updated by the user ---------------------------------------
 gladys.onConfigUpdated(async (newConfig) => {
@@ -120,10 +140,13 @@ gladys.on('connected', async () => {
     config = normalizeConfig(await gladys.getConfig());
     monitor.setConfig(config);
 
-    // 2) Replay the last-seen history persisted by the previous run — once:
-    //    a Gladys reconnection must not rewind what we learned since.
+    // 2) Replay the last-seen history and the last verdicts persisted by the
+    //    previous run — once: a Gladys reconnection must not rewind what we
+    //    learned since.
     if (!historyRestored) {
-      monitor.restore(await store.load());
+      const history = await store.load();
+      monitor.restore(history.devices);
+      transitions.restore(history.verdicts);
       historyRestored = true;
     }
 
@@ -213,7 +236,10 @@ async function publishDevices() {
   return devices.length;
 }
 
-/** Evaluate every device and publish what changed. */
+/**
+ * Evaluate every device and publish what changed: the states, then the scene
+ * events, then the widget nudge.
+ */
 async function publishStates() {
   if (!gladys.connected) {
     return;
@@ -225,6 +251,46 @@ async function publishStates() {
       `${snapshot.summary.silent}/${snapshot.summary.monitored} device(s) silent, ${published} state(s) published`,
     );
   }
+  // After the states: a scene started by the event that reads the `Alive`
+  // feature must already find the new value.
+  await publishSceneEvents(snapshot);
+  refreshWidget(snapshot);
+}
+
+/**
+ * Fire the scene triggers for the devices whose verdict just flipped.
+ * @param {object} snapshot - A `DevicesMonitor.snapshot()` result.
+ */
+async function publishSceneEvents(snapshot) {
+  const flips = transitions.diff(snapshot, { listening: Boolean(mqtt?.connected) });
+  for (const { key, data } of buildSceneEvents(gladys, flips)) {
+    // Not retried: the verdict has moved on, and a replay later would announce
+    // a silence that may be over. One failure must not cost the other events.
+    await gladys
+      .publishSceneEvent(key, data)
+      .catch((err) => logger.error(`Failed to fire "${key}" for ${data.device_name}`, err));
+  }
+}
+
+/**
+ * Ask the open dashboards to re-pull the widget, only when what it shows
+ * changed (the core rate-limits the nudge anyway, 1 per 10 s).
+ * @param {object} snapshot - A `DevicesMonitor.snapshot()` result.
+ */
+function refreshWidget(snapshot) {
+  const signature = networkHealthSignature(snapshot);
+  if (signature !== widgetSignature) {
+    widgetSignature = signature;
+    gladys.requestWidgetRefresh(WIDGET.NETWORK_HEALTH);
+  }
+}
+
+/**
+ * What the `/data` file holds.
+ * @returns {import('./src/lastSeenStore.js').PersistedHistory} The history to persist.
+ */
+function persistedHistory() {
+  return { devices: monitor.serialize(), verdicts: transitions.serialize() };
 }
 
 /**
@@ -316,7 +382,7 @@ function startTimers() {
   }, config.check_interval_seconds * 1000);
 
   persistTimer = setInterval(() => {
-    store.save(monitor.serialize()).catch(() => {});
+    store.save(persistedHistory()).catch(() => {});
   }, PERSIST_INTERVAL_MS);
 }
 
@@ -341,7 +407,7 @@ function stopTimers() {
 gladys.handleShutdown(async (signal) => {
   logger.info(`Received ${signal} -> graceful shutdown`);
   stopTimers();
-  await store.save(monitor.serialize()).catch(() => {});
+  await store.save(persistedHistory()).catch(() => {});
   await mqtt?.stop().catch(() => {});
 });
 

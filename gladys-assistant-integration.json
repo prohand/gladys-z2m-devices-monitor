@@ -8,7 +8,7 @@
   },
   "version": "1.0.5",
   "docker_image": "ghcr.io/prohand/gladys-z2m-devices-monitor:1.0.5",
-  "gladys_version": ">=4.86.0",
+  "gladys_version": ">=5.1.0",
   "cover_image": "https://raw.githubusercontent.com/prohand/gladys-z2m-devices-monitor/main/cover.jpg",
   "categories": ["network"],
   "transports": ["local"],
@@ -304,6 +304,382 @@
         "fr": "Rafraîchir la liste des appareils"
       },
       "timeout_seconds": 30
+    }
+  ],
+  "widgets": [
+    {
+      "key": "network_health",
+      "label": {
+        "en": "Zigbee health",
+        "fr": "Santé Zigbee"
+      },
+      "description": {
+        "en": "Silent Zigbee2MQTT devices, since when, and the bridge state.",
+        "fr": "Les appareils Zigbee2MQTT silencieux, depuis quand, et l'état du bridge."
+      },
+      "icon": "activity",
+      "settings": [
+        {
+          "key": "power_source",
+          "type": "select",
+          "label": {
+            "en": "Devices shown",
+            "fr": "Appareils affichés"
+          },
+          "options": [
+            {
+              "value": "all",
+              "label": {
+                "en": "All devices",
+                "fr": "Tous les appareils"
+              }
+            },
+            {
+              "value": "battery",
+              "label": {
+                "en": "Battery devices only",
+                "fr": "Appareils sur pile uniquement"
+              }
+            },
+            {
+              "value": "mains",
+              "label": {
+                "en": "Mains-powered devices only",
+                "fr": "Appareils sur secteur uniquement"
+              }
+            }
+          ],
+          "required": false,
+          "default": "all"
+        }
+      ]
+    }
+  ],
+  "scene_triggers": [
+    {
+      "key": "device_silent",
+      "label": {
+        "en": "A Zigbee device went silent",
+        "fr": "Un appareil Zigbee devient silencieux"
+      },
+      "description": {
+        "en": "Fires once per device, the moment it passes its silence threshold.",
+        "fr": "Se déclenche une fois par appareil, dès qu'il dépasse son seuil de silence."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Device",
+            "fr": "Appareil"
+          },
+          "description": {
+            "en": "Leave empty to react to any watched device.",
+            "fr": "Laissez vide pour réagir à n'importe quel appareil surveillé."
+          },
+          "required": false
+        },
+        {
+          "key": "power_source",
+          "type": "select",
+          "label": {
+            "en": "Power source",
+            "fr": "Alimentation"
+          },
+          "description": {
+            "en": "Leave empty for both.",
+            "fr": "Laissez vide pour les deux."
+          },
+          "options": [
+            {
+              "value": "battery",
+              "label": {
+                "en": "Battery",
+                "fr": "Pile"
+              }
+            },
+            {
+              "value": "mains",
+              "label": {
+                "en": "Mains",
+                "fr": "Secteur"
+              }
+            }
+          ],
+          "required": false
+        }
+      ],
+      "variables": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Device name (Zigbee2MQTT)",
+            "fr": "Nom de l'appareil (Zigbee2MQTT)"
+          }
+        },
+        {
+          "key": "silence_minutes",
+          "type": "number",
+          "label": {
+            "en": "Silent for (min)",
+            "fr": "Silencieux depuis (min)"
+          }
+        },
+        {
+          "key": "ieee_address",
+          "type": "string",
+          "label": {
+            "en": "IEEE address",
+            "fr": "Adresse IEEE"
+          }
+        },
+        {
+          "key": "power_source",
+          "type": "string",
+          "label": {
+            "en": "Power source (battery or mains)",
+            "fr": "Alimentation (battery ou mains)"
+          }
+        },
+        {
+          "key": "threshold_minutes",
+          "type": "number",
+          "label": {
+            "en": "Silence threshold (min)",
+            "fr": "Seuil de silence (min)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "device_back",
+      "label": {
+        "en": "A Zigbee device is back",
+        "fr": "Un appareil Zigbee redonne signe de vie"
+      },
+      "description": {
+        "en": "Fires once per device, when a device reported silent speaks again.",
+        "fr": "Se déclenche une fois par appareil, quand un appareil signalé silencieux se manifeste à nouveau."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Device",
+            "fr": "Appareil"
+          },
+          "description": {
+            "en": "Leave empty to react to any watched device.",
+            "fr": "Laissez vide pour réagir à n'importe quel appareil surveillé."
+          },
+          "required": false
+        },
+        {
+          "key": "power_source",
+          "type": "select",
+          "label": {
+            "en": "Power source",
+            "fr": "Alimentation"
+          },
+          "description": {
+            "en": "Leave empty for both.",
+            "fr": "Laissez vide pour les deux."
+          },
+          "options": [
+            {
+              "value": "battery",
+              "label": {
+                "en": "Battery",
+                "fr": "Pile"
+              }
+            },
+            {
+              "value": "mains",
+              "label": {
+                "en": "Mains",
+                "fr": "Secteur"
+              }
+            }
+          ],
+          "required": false
+        }
+      ],
+      "variables": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Device name (Zigbee2MQTT)",
+            "fr": "Nom de l'appareil (Zigbee2MQTT)"
+          }
+        },
+        {
+          "key": "ieee_address",
+          "type": "string",
+          "label": {
+            "en": "IEEE address",
+            "fr": "Adresse IEEE"
+          }
+        },
+        {
+          "key": "power_source",
+          "type": "string",
+          "label": {
+            "en": "Power source (battery or mains)",
+            "fr": "Alimentation (battery ou mains)"
+          }
+        },
+        {
+          "key": "threshold_minutes",
+          "type": "number",
+          "label": {
+            "en": "Silence threshold (min)",
+            "fr": "Seuil de silence (min)"
+          }
+        }
+      ]
+    }
+  ],
+  "scene_actions": [
+    {
+      "key": "get_silent_devices",
+      "label": {
+        "en": "Get the silent Zigbee devices",
+        "fr": "Récupérer les appareils Zigbee silencieux"
+      },
+      "description": {
+        "en": "How many devices are silent right now, and their names.",
+        "fr": "Combien d'appareils sont silencieux en ce moment, et leurs noms."
+      },
+      "timeout_seconds": 10,
+      "fields": [
+        {
+          "key": "power_source",
+          "type": "select",
+          "label": {
+            "en": "Power source",
+            "fr": "Alimentation"
+          },
+          "options": [
+            {
+              "value": "all",
+              "label": {
+                "en": "All devices",
+                "fr": "Tous les appareils"
+              }
+            },
+            {
+              "value": "battery",
+              "label": {
+                "en": "Battery",
+                "fr": "Pile"
+              }
+            },
+            {
+              "value": "mains",
+              "label": {
+                "en": "Mains",
+                "fr": "Secteur"
+              }
+            }
+          ],
+          "required": false,
+          "default": "all"
+        }
+      ],
+      "outputs": [
+        {
+          "key": "count",
+          "type": "number",
+          "label": {
+            "en": "Number of silent devices",
+            "fr": "Nombre d'appareils silencieux"
+          }
+        },
+        {
+          "key": "names",
+          "type": "string",
+          "label": {
+            "en": "Names of the silent devices",
+            "fr": "Noms des appareils silencieux"
+          }
+        },
+        {
+          "key": "monitored",
+          "type": "number",
+          "label": {
+            "en": "Number of watched devices",
+            "fr": "Nombre d'appareils surveillés"
+          }
+        }
+      ]
+    },
+    {
+      "key": "get_device_status",
+      "label": {
+        "en": "Check a Zigbee device",
+        "fr": "Vérifier un appareil Zigbee"
+      },
+      "description": {
+        "en": "Whether one device still gives signs of life, and since when it is silent.",
+        "fr": "Si un appareil donne encore signe de vie, et depuis quand il se tait."
+      },
+      "timeout_seconds": 10,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Device",
+            "fr": "Appareil"
+          },
+          "description": {
+            "en": "One of the watched devices you added to Gladys.",
+            "fr": "Un des appareils surveillés que vous avez ajoutés à Gladys."
+          },
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "key": "alive",
+          "type": "boolean",
+          "label": {
+            "en": "Alive",
+            "fr": "En vie"
+          }
+        },
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Device name (Zigbee2MQTT)",
+            "fr": "Nom de l'appareil (Zigbee2MQTT)"
+          }
+        },
+        {
+          "key": "silence_minutes",
+          "type": "number",
+          "label": {
+            "en": "Silent for (min)",
+            "fr": "Silencieux depuis (min)"
+          }
+        },
+        {
+          "key": "threshold_minutes",
+          "type": "number",
+          "label": {
+            "en": "Silence threshold (min)",
+            "fr": "Seuil de silence (min)"
+          }
+        }
+      ]
     }
   ]
 }

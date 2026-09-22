@@ -307,6 +307,29 @@ export function isBatteryPowered(device) {
 }
 
 /**
+ * The power source as the scene editor and the widget settings name it: two
+ * values only, because the thresholds only know two (see `timeoutMinutesFor`).
+ * @param {object} device - Device descriptor.
+ * @returns {'battery'|'mains'} The power source.
+ */
+export function powerSourceOf(device) {
+  return isBatteryPowered(device) ? 'battery' : 'mains';
+}
+
+/**
+ * Keep the devices matching a power source filter.
+ * @param {Array<object>} devices - Devices of a monitor snapshot.
+ * @param {unknown} powerSource - `battery`, `mains`, or anything else for "all".
+ * @returns {Array<object>} The matching devices.
+ */
+export function filterByPowerSource(devices, powerSource) {
+  if (powerSource !== 'battery' && powerSource !== 'mains') {
+    return devices;
+  }
+  return devices.filter((device) => powerSourceOf(device) === powerSource);
+}
+
+/**
  * A blank activity record.
  * @returns {{lastSeen: null, availability: null}} Empty record.
  */

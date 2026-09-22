@@ -7,6 +7,10 @@
 // user is never alerted. So the map is written to `/data`, the single writable
 // volume of the sandbox (the rest of the rootfs is mounted read-only).
 //
+// The same file carries the last alive/silent verdict of each device (see
+// `transitions.js`): the scene triggers fire on a verdict FLIP, and a flip is
+// only a flip if the verdict before the restart is known.
+//
 // Writing is best-effort: a broken or read-only volume degrades the integration
 // to "forgets across restarts", it never takes it down.
 // -----------------------------------------------------------------------------
@@ -17,7 +21,11 @@ import { createLogger } from '@gladysassistant/integration-sdk';
 
 const logger = createLogger({ name: 'store' });
 
+// Still 1: `verdicts` is an addition an older reader simply ignores, and a file
+// written before it reads as "no verdict yet" — a baseline, never a flip.
 const FILE_VERSION = 1;
+
+/** @typedef {{devices: Record<string, {last_seen: number}>, verdicts: Record<string, boolean>}} PersistedHistory */
 
 export class LastSeenStore {
   /**
@@ -30,10 +38,11 @@ export class LastSeenStore {
   }
 
   /**
-   * Read the persisted last-seen map.
-   * @returns {Promise<Record<string, {last_seen: number}>>} The map, empty on a first run or an unreadable file.
+   * Read the persisted history.
+   * @returns {Promise<PersistedHistory>} The history, empty on a first run or an unreadable file.
    */
   async load() {
+    const empty = { devices: {}, verdicts: {} };
     let raw;
     try {
       raw = await readFile(this.filePath, 'utf8');
@@ -41,30 +50,34 @@ export class LastSeenStore {
       if (err.code !== 'ENOENT') {
         logger.warn(`Cannot read ${this.filePath}, starting with an empty history`, err);
       }
-      return {};
+      return empty;
     }
     try {
       const parsed = JSON.parse(raw);
       if (parsed?.version !== FILE_VERSION || typeof parsed.devices !== 'object') {
         logger.warn(`Ignoring ${this.filePath}: unexpected format`);
-        return {};
+        return empty;
       }
       logger.info(`Restored ${Object.keys(parsed.devices).length} last-seen timestamps`);
-      return parsed.devices;
+      const verdicts =
+        parsed.verdicts && typeof parsed.verdicts === 'object' ? parsed.verdicts : {};
+      return { devices: parsed.devices, verdicts };
     } catch (err) {
       logger.warn(`Ignoring ${this.filePath}: invalid JSON`, err);
-      return {};
+      return empty;
     }
   }
 
   /**
-   * Persist the last-seen map, atomically (write to a temporary file then
-   * rename) so a container killed mid-write never leaves a truncated file.
-   * @param {Record<string, {last_seen: number}>} devices - Map keyed by IEEE address.
+   * Persist the history, atomically (write to a temporary file then rename) so
+   * a container killed mid-write never leaves a truncated file.
+   * @param {object} history - What to persist.
+   * @param {Record<string, {last_seen: number}>} history.devices - Last-seen map, keyed by IEEE address.
+   * @param {Record<string, boolean>} [history.verdicts] - Last verdicts, keyed by IEEE address.
    * @returns {Promise<boolean>} True when the write succeeded.
    */
-  async save(devices) {
-    const payload = JSON.stringify({ version: FILE_VERSION, devices });
+  async save({ devices, verdicts = {} }) {
+    const payload = JSON.stringify({ version: FILE_VERSION, devices, verdicts });
     const temporaryPath = `${this.filePath}.tmp`;
     try {
       await mkdir(dirname(this.filePath), { recursive: true });

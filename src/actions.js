@@ -154,7 +154,7 @@ export function formatDuration(minutes, language = 'en') {
  * @param {boolean|null} bridgeOnline - Bridge state held by the monitor.
  * @returns {{en: string, fr: string}} A short multi-language label.
  */
-function describeBridge(bridgeOnline) {
+export function describeBridge(bridgeOnline) {
   if (bridgeOnline === null) {
     return { en: 'unknown', fr: 'inconnu' };
   }
