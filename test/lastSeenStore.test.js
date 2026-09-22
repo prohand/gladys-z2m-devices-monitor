@@ -20,33 +20,48 @@ async function createStore() {
   return { store: new LastSeenStore({ filePath }), filePath };
 }
 
+const EMPTY = { devices: {}, verdicts: {} };
+
 test('a missing file reads as an empty history, without noise', async () => {
   const { store } = await createStore();
-  assert.deepEqual(await store.load(), {});
+  assert.deepEqual(await store.load(), EMPTY);
 });
 
 test('what is saved is what is loaded back', async () => {
   const { store } = await createStore();
-  const devices = { '0x00158d0001111111': { last_seen: 1767225600000 } };
-  assert.equal(await store.save(devices), true);
-  assert.deepEqual(await store.load(), devices);
+  const history = {
+    devices: { '0x00158d0001111111': { last_seen: 1767225600000 } },
+    verdicts: { '0x00158d0001111111': false },
+  };
+  assert.equal(await store.save(history), true);
+  assert.deepEqual(await store.load(), history);
+});
+
+// Written by 1.0.x, before the scene triggers: no verdict means a baseline on
+// the first evaluation, so an upgrade never announces the devices already dead.
+test('a file written before the verdicts existed still restores its timestamps', async () => {
+  const { store, filePath } = await createStore();
+  const devices = { a: { last_seen: 1 } };
+  await writeFile(filePath, JSON.stringify({ version: 1, devices }), 'utf8');
+  assert.deepEqual(await store.load(), { devices, verdicts: {} });
 });
 
 test('the file is written atomically, so a kill mid-write leaves no truncated JSON', async () => {
   const { store, filePath } = await createStore();
-  await store.save({ a: { last_seen: 1 } });
+  await store.save({ devices: { a: { last_seen: 1 } }, verdicts: { a: true } });
   const written = JSON.parse(await readFile(filePath, 'utf8'));
   assert.equal(written.version, 1);
   assert.deepEqual(written.devices, { a: { last_seen: 1 } });
+  assert.deepEqual(written.verdicts, { a: true });
 });
 
 test('a corrupted or foreign file is ignored instead of crashing the monitor', async () => {
   const { store, filePath } = await createStore();
   await writeFile(filePath, 'not json at all', 'utf8');
-  assert.deepEqual(await store.load(), {});
+  assert.deepEqual(await store.load(), EMPTY);
 
   await writeFile(filePath, JSON.stringify({ version: 99, devices: { a: 1 } }), 'utf8');
-  assert.deepEqual(await store.load(), {});
+  assert.deepEqual(await store.load(), EMPTY);
 });
 
 // A read-only or broken volume degrades the integration to "forgets across
@@ -57,5 +72,5 @@ test('an unwritable path fails softly', async () => {
   // way a read-only volume would, without needing root to set one up.
   await writeFile(filePath, 'blocker', 'utf8');
   const store = new LastSeenStore({ filePath: join(filePath, 'last-seen.json') });
-  assert.equal(await store.save({ a: { last_seen: 1 } }), false);
+  assert.equal(await store.save({ devices: { a: { last_seen: 1 } } }), false);
 });

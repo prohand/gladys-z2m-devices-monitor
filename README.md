@@ -65,6 +65,17 @@ features — silent count, silent names (the notification text), alive count,
 watched count, and the bridge state. One scene on its `Silent devices > 0`
 covers every device, including the ones paired next year.
 
+On top of the devices (Gladys >= 5.1.0):
+
+- a **Zigbee health** dashboard widget — silent/alive/watched counters, the bridge
+  state and the silent devices with their silence, working before any device is
+  created in Gladys;
+- two **scene triggers**, _A Zigbee device went silent_ and _A Zigbee device is
+  back_ — one event per device, carrying its name, so the alert scene is one
+  trigger and one message;
+- two **scene actions**, _Get the silent Zigbee devices_ and _Check a Zigbee
+  device_.
+
 Note that Gladys shows the standard label of a feature's category
 (`Text`, `State of input`…) instead of the name given here whenever that feature
 is the only one of its type on its device — see
@@ -82,6 +93,9 @@ The user documentation lists both names side by side.
 │  ├─ mqttClient.js                  # the broker connection
 │  ├─ statePublisher.js              # deduplicated, rate-aware state publishing
 │  ├─ lastSeenStore.js               # /data persistence, so a restart forgets nothing
+│  ├─ transitions.js                 # alive/silent flips, the source of the scene triggers
+│  ├─ scenes.js                      # scene trigger events + scene action handlers
+│  ├─ widget.js                      # the dashboard widget content
 │  ├─ actions.js                     # the Configuration screen buttons
 │  ├─ config.js                      # config defaults, normalization, parsing
 │  ├─ devices/                       # the Gladys device payloads
@@ -110,6 +124,12 @@ died last month a brand new threshold and the alert would never fire.
 
 **Never-seen devices** are measured from the moment the monitor started, so a
 fresh install does not declare the whole network dead on its first tick.
+
+**Scene triggers fire on a flip, not on a state.** The last verdict of each device
+is persisted next to the last-seen map: a device seen for the first time is a
+baseline (installing or upgrading announces nothing), and the verdicts are frozen
+while the broker is unreachable or the bridge offline, so a Zigbee2MQTT outage is
+not one notification per device.
 
 ## Run it locally
 

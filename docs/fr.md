@@ -44,6 +44,7 @@ obligatoire.
 
 ### 1. Pré-requis
 
+- Gladys **5.1.0 ou plus récent** (widget et blocs de scène) ;
 - Zigbee2MQTT en fonctionnement, publiant sur un broker MQTT ;
 - ce broker doit être joignable depuis Gladys (même réseau local).
 
@@ -207,11 +208,71 @@ Gladys remonte déjà le LQI de chaque appareil, et un deuxième exemplaire de l
 même valeur ne ferait qu'encombrer les listes d'appareils et les sélecteurs de
 scène.
 
+## Le widget du tableau de bord
+
+Modifiez votre tableau de bord et ajoutez le widget **Santé Zigbee**. Il affiche
+en un coup d'œil :
+
+- trois compteurs : appareils **silencieux**, **en vie** et **surveillés** ;
+- l'état du **bridge Zigbee2MQTT** ;
+- la liste des appareils silencieux, avec la durée de leur silence (ou « jamais
+  vu »). Au-delà de 9 appareils, la dernière ligne indique combien d'autres se
+  taisent.
+
+Il fonctionne **dès l'installation**, sans avoir créé le moindre appareil dans
+Gladys. Le réglage **Appareils affichés** permet de ne montrer que les appareils
+sur pile ou sur secteur — pratique pour deux widgets côte à côte. Le widget se
+met à jour tout seul chaque minute, et tout de suite quand un appareil tombe ou
+revient.
+
 ## Être alerté : créer la scène
 
-L'intégration lève le drapeau, Gladys envoie l'alerte. La scène la plus utile est
-celle bâtie sur l'appareil **Zigbee2MQTT monitor** : elle couvre tout le réseau,
-y compris les appareils que vous appairerez dans six mois.
+L'intégration lève le drapeau, Gladys envoie l'alerte.
+
+### Avec le déclencheur de l'intégration (recommandé)
+
+1. **Scènes → Nouvelle scène** ;
+2. déclencheur : dans la catégorie **Intégrations**, choisissez **Un appareil
+   Zigbee devient silencieux**. Laissez les filtres vides pour couvrir tout le
+   réseau, y compris les appareils appairés plus tard, ou choisissez un
+   **Appareil** précis et/ou une **Alimentation** (pile, secteur) ;
+3. action : **Envoyer un message** avec un texte du type :
+
+   > {{triggerEvent.data.device_name}} ne donne plus signe de vie depuis
+   > {{triggerEvent.data.silence_minutes}} minutes.
+
+   Tapez `{{` dans le message pour choisir les variables dans la liste.
+
+C'est tout : pas besoin de bloc « Récupérer le dernier état ». Les variables
+disponibles :
+
+| Variable            | Contenu                               |
+| ------------------- | ------------------------------------- |
+| `device_name`       | le nom de l'appareil dans Zigbee2MQTT |
+| `silence_minutes`   | depuis combien de minutes il se tait  |
+| `threshold_minutes` | son seuil de silence                  |
+| `power_source`      | `battery` (pile) ou `mains` (secteur) |
+| `ieee_address`      | son adresse IEEE                      |
+
+Bon à savoir sur ce déclencheur :
+
+- **une alerte par appareil** : si un deuxième capteur tombe alors que le premier
+  se tait encore, vous recevez une deuxième alerte — ce que la scène sur le
+  compteur ci-dessous ne fait pas ;
+- **pas d'avalanche quand c'est Zigbee2MQTT qui tombe** : tant que le broker est
+  injoignable ou que le bridge est hors ligne, aucun appareil n'est annoncé (tous
+  se taisent pour la même raison). Au retour du réseau, seuls ceux qui restent
+  muets sont annoncés ;
+- **pas d'alerte à l'installation ni à la mise à jour** pour les appareils déjà
+  silencieux : seul un _passage_ de « en vie » à « silencieux » compte. Ce
+  souvenir survit aux redémarrages ;
+- le déclencheur **Un appareil Zigbee redonne signe de vie** fonctionne de la même
+  façon, pour dire « fausse alerte, il est revenu ».
+
+### Avec l'appareil Zigbee2MQTT monitor
+
+L'ancienne méthode, toujours valable. Elle se déclenche une seule fois quand le
+nombre d'appareils silencieux passe au-dessus de zéro.
 
 1. **Scènes → Nouvelle scène** ;
 2. déclencheur : **La valeur d'un appareil change** → appareil
@@ -245,6 +306,24 @@ le sélecteur : _nom de l'appareil (Etat de l'entrée)_).
 Astuce : ajoutez une condition d'horaire à la scène si vous ne voulez pas être
 réveillé la nuit — un capteur muet peut presque toujours attendre le matin.
 
+## Les actions de scène
+
+L'intégration ajoute deux blocs dans la catégorie **Intégrations** des actions de
+scène. Leurs résultats s'insèrent dans les actions suivantes avec `{{`.
+
+- **Récupérer les appareils Zigbee silencieux** — renvoie le **nombre**
+  d'appareils silencieux, leurs **noms** et le nombre d'appareils surveillés. Un
+  filtre permet de ne compter que les appareils sur pile ou sur secteur. Exemple :
+  une scène chaque matin à 8 h qui vous envoie la liste du jour.
+- **Vérifier un appareil Zigbee** — pour un appareil choisi, renvoie s'il est
+  **en vie**, depuis combien de minutes il se tait et son seuil. Exemple : avant
+  de partir en vacances, vérifier que le détecteur de fumée répond. L'appareil
+  doit avoir été ajouté dans Gladys pour apparaître dans la liste.
+
+Si l'inventaire Zigbee2MQTT n'est pas encore reçu, ou si l'appareil n'est plus
+surveillé, l'action échoue (la scène le note dans ses logs et continue) plutôt
+que de répondre une valeur fausse.
+
 ## Les boutons de l'écran de configuration
 
 - **Tester la connexion MQTT** — état réel de la connexion, nombre d'appareils
@@ -264,7 +343,8 @@ réveillé la nuit — un capteur muet peut presque toujours attendre le matin.
   qui peut tomber de son côté. Utilisez la fonctionnalité _Zigbee2MQTT bridge
   online_ pour cela.
 - **L'historique du dernier signe de vie est persisté** dans le volume `/data` de
-  l'intégration. Un redémarrage du conteneur ne remet donc pas tous vos appareils
+  l'intégration, avec le dernier état connu de chaque appareil (pour que les
+  déclencheurs de scène ne se relancent pas à chaque redémarrage). Un redémarrage du conteneur ne remet donc pas tous vos appareils
   à zéro — sans quoi un capteur mort depuis un mois repartirait pour un seuil
   complet sans jamais déclencher l'alerte.
 - **Si vous mettez à jour depuis une version qui publiait l'intensité du

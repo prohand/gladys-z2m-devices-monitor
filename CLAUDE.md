@@ -50,6 +50,8 @@ MQTT broker → mqttClient.js → messageRouter.js → DevicesMonitor (pure stat
                                         devices/{index,zigbeeDevice,monitorSummary}.js
                                                        ↓ candidate states
                                             statePublisher.js → Gladys SDK
+                                     snapshot() ↓
+                 transitions.js (flips) → scenes.js (events)  ·  widget.js (content)
 ```
 
 - **`src/monitor.js`** — the watchdog and the only source of truth for "is it alive?". Holds no I/O
@@ -62,7 +64,12 @@ MQTT broker → mqttClient.js → messageRouter.js → DevicesMonitor (pure stat
   Zigbee device, plus a singleton `Zigbee2MQTT monitor` summary device carrying network-wide
   counters (so one scene on `Silent devices > 0` covers devices paired later).
 - **`src/statePublisher.js`** — dedupe/throttle layer in front of the rate-limited host API.
-- **`src/lastSeenStore.js`** — `/data` persistence of the last-seen map.
+- **`src/lastSeenStore.js`** — `/data` persistence of the last-seen map and of the last verdicts.
+- **`src/transitions.js`** — `AliveTransitions`: remembers each device's last verdict and reports the
+  flips, which `index.js` fires as scene triggers.
+- **`src/scenes.js`** — pure builders of the scene events and the scene action handlers
+  (manifest `scene_triggers` / `scene_actions`).
+- **`src/widget.js`** — the dashboard widget content (manifest `widgets`), in the core vocabulary.
 
 ### Invariants that are easy to break
 
@@ -109,6 +116,25 @@ them):
   pair published here must have both an icon in the front's `DeviceFeatureCategoriesIcon` and a
   `deviceFeatureCategory.<category>.<type>` label in the oldest Gladys the manifest supports.
 
+**Scene triggers and widget** (Gladys >= 5.1.0).
+
+- A trigger fires on a verdict **flip**, never on a state. A device the tracker sees for the first
+  time is a baseline, so installing/upgrading announces nothing; the verdicts are persisted with the
+  last-seen map (`verdicts` key, file version still 1), so a restart neither re-announces last
+  week's death nor misses one that happened while the container was down.
+- While the MQTT session is down or the bridge is offline the verdicts are **frozen**, not
+  advanced: every device goes silent together then, and one event each would be a notification
+  storm about a single failure. A device still dead once the network is back is announced then.
+- Events go out after the states, so a scene reading `Alive` sees the new value. A failed event is
+  not retried. Never fire an event from a scene action handler (the scene would loop).
+- Scene/widget keys, field keys, variable and output keys are stored by the user's scenes and
+  dashboards: never rename or remove one; a new `required` action field needs a `default`.
+- A trigger filter only matches if its key is in the event data (`device` is the Gladys device
+  `external_id`, what a `source: "devices"` select stores). `test/manifest.test.js` checks it.
+- The widget is built from the snapshot, never bound to `device_feature`s: those read nothing until
+  the user created the device, and the widget must work right after install. Check contents with
+  `validateWidgetContent` — the core silently drops what breaks the budget.
+
 **Sandbox.** The rootfs is read-only; `/data` (overridable via `GLADYS_DATA_DIR`) is the only
 writable path. Writes are atomic (tmp + rename) and best-effort: a failure degrades the integration
 to "forgets across restarts", it never takes it down.
@@ -125,7 +151,12 @@ image. It's kept in sync with the code by `test/manifest.test.js`, which will fa
 - leave any user-facing string without both `en` and `fr`;
 - declare more than three `categories`, or lower `gladys_version` below `>=4.86.0` while `categories`
   is declared — a core older than 4.86.0 rejects any manifest field it does not know, so the
-  integration would fail to install instead of being filtered out of the catalog.
+  integration would fail to install instead of being filtered out of the catalog;
+- lower `gladys_version` below `>=5.1.0` while `widgets` / `scene_triggers` / `scene_actions` are
+  declared (same reason, one release later);
+- let the widget, trigger or action keys drift from `WIDGET` / `SCENE_TRIGGER` / `SCENE_ACTION`, or
+  a trigger field/variable be missing from the event data, or an action's outputs differ from what
+  its handler returns.
 
 `categories` are the catalog shelves the integration sits on (`network` alone here: it watches the
 health of a Zigbee/MQTT network rather than driving a domain of the house — and it bridges no
