@@ -129,6 +129,12 @@ gladys.onConfigUpdated(async (newConfig) => {
   // verdict: republish both lists.
   await publishDevices();
   await publishStates();
+
+  // The watchdog interval is read when the timer is armed: re-arm it, or a new
+  // `check_interval_seconds` would only apply after the next reconnection.
+  if (tickTimer && previousConfig.check_interval_seconds !== config.check_interval_seconds) {
+    startTickTimer();
+  }
 });
 
 // --- Connection lifecycle ----------------------------------------------------
@@ -375,15 +381,21 @@ function buildConnectionStatus() {
 /** Start the watchdog tick and the periodic persistence. */
 function startTimers() {
   stopTimers();
+  startTickTimer();
+
+  persistTimer = setInterval(() => {
+    store.save(persistedHistory()).catch(() => {});
+  }, PERSIST_INTERVAL_MS);
+}
+
+/** (Re)arm the watchdog tick alone, at the configured interval. */
+function startTickTimer() {
+  clearInterval(tickTimer);
   tickTimer = setInterval(() => {
     Promise.all([publishStates(), refreshConnectionStatus()]).catch((err) =>
       logger.error('Watchdog tick failed', err),
     );
   }, config.check_interval_seconds * 1000);
-
-  persistTimer = setInterval(() => {
-    store.save(persistedHistory()).catch(() => {});
-  }, PERSIST_INTERVAL_MS);
 }
 
 /** Stop the timers (Gladys disconnected, or the container is shutting down). */
