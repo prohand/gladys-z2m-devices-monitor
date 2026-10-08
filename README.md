@@ -127,6 +127,12 @@ died last month a brand new threshold and the alert would never fire.
 **Never-seen devices** are measured from the moment the monitor started, so a
 fresh install does not declare the whole network dead on its first tick.
 
+**Outages are forgiven, not counted.** After the broker, the bridge or the
+container itself was down for longer than a threshold, every mains device would
+be declared silent on the first tick and "back" right after. A device that was
+alive when the outage began is given one full threshold from the end of the
+outage to speak again; one already dead before it stays dead.
+
 **Scene triggers fire on a flip, not on a state.** The last verdict of each device
 is persisted next to the last-seen map: a device seen for the first time is a
 baseline (installing or upgrading announces nothing), and the verdicts are frozen

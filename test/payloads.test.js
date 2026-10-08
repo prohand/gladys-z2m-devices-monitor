@@ -4,6 +4,7 @@ import {
   parseAvailability,
   parseBridgeDevices,
   parseBridgeEvent,
+  parseBridgeGroups,
   parseBridgeState,
   parseLastSeen,
   parsePayload,
@@ -95,4 +96,18 @@ test('parseLastSeen returns undefined when the field is absent or unusable', () 
   assert.equal(parseLastSeen({ last_seen: 'not a date' }, now), undefined);
   assert.equal(parseLastSeen({ last_seen: 0 }, now), undefined);
   assert.equal(parseLastSeen('a string', now), undefined);
+});
+
+test('parseBridgeGroups keeps the group names and tolerates junk', () => {
+  assert.deepEqual(
+    parseBridgeGroups([
+      { id: 1, friendly_name: 'living room', members: [] },
+      { id: 2 },
+      null,
+      { id: 3, friendly_name: '' },
+      { id: 4, friendly_name: 'garden/lights' },
+    ]),
+    ['living room', 'garden/lights'],
+  );
+  assert.equal(parseBridgeGroups('not a list'), undefined);
 });

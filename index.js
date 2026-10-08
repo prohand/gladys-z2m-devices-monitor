@@ -123,6 +123,7 @@ gladys.onConfigUpdated(async (newConfig) => {
     logger.info('Broker configuration changed -> reconnecting');
     await mqtt.stop();
     mqtt = null;
+    monitor.setListening(false);
     startMqtt();
   }
 
@@ -182,7 +183,10 @@ function startMqtt() {
   mqtt = new MqttConnection({
     config,
     onMessage: handleMqttMessage,
-    onStatusChange: () => {
+    onStatusChange: (connected) => {
+      // The monitor forgives the silence of an outage: it has to know when one
+      // begins and ends (see `DevicesMonitor.setListening`).
+      monitor.setListening(connected);
       refreshConnectionStatus().catch((err) =>
         logger.error('Failed to report the connection status', err),
       );
@@ -283,7 +287,11 @@ function refreshWidget(snapshot) {
  * @returns {import('./src/lastSeenStore.js').PersistedHistory} The history to persist.
  */
 function persistedHistory() {
-  return { devices: monitor.serialize(), verdicts: transitions.serialize() };
+  return {
+    devices: monitor.serialize(),
+    verdicts: transitions.serialize(),
+    heardAt: monitor.lastHeardAt(),
+  };
 }
 
 /**
@@ -351,7 +359,7 @@ function startTimers() {
  */
 async function startPersistence() {
   const history = await store.load();
-  monitor.restore(history.devices);
+  monitor.restore(history.devices, { heardAt: history.heardAt });
   transitions.restore(history.verdicts);
   persistTimer = setInterval(() => {
     store.save(persistedHistory()).catch(() => {});

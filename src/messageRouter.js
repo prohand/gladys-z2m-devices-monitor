@@ -22,6 +22,7 @@ import {
   parseAvailability,
   parseBridgeDevices,
   parseBridgeEvent,
+  parseBridgeGroups,
   parseBridgeState,
   parseLastSeen,
   parsePayload,
@@ -53,10 +54,25 @@ export function routeMessage({ monitor, baseTopic, topic, payload, retained = fa
         logger.warn('Ignoring an unreadable bridge/devices payload');
         break;
       }
+      // Zigbee2MQTT always lists its coordinator: a bare `[]` is no inventory
+      // it ever published (a cleared or hand-made retained message), and
+      // honoring it would drop every device at once.
+      if (parsed.length === 0) {
+        logger.warn('Ignoring an empty bridge/devices payload (not even the coordinator)');
+        break;
+      }
       const devices = parseBridgeDevices(parsed);
       logger.info(`Zigbee2MQTT inventory received: ${devices.length} device(s)`);
       monitor.setZ2mDevices(devices);
       inventoryUpdated = true;
+      break;
+    }
+
+    case TOPIC_KINDS.BRIDGE_GROUPS: {
+      const groups = parseBridgeGroups(parsePayload(payload));
+      if (groups) {
+        monitor.setZ2mGroups(groups);
+      }
       break;
     }
 

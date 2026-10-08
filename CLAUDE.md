@@ -92,11 +92,30 @@ so topics are parsed against the longest _known_ friendly-name prefix, not split
 for a name that isn't resolvable yet (reports race the inventory on connect) is buffered in
 `pendingByFriendlyName` and replayed on the next inventory — and `serialize()` persists those pending
 entries too, otherwise a Zigbee2MQTT outage would quietly erase the history on the next write.
-`mergeActivity` only ever moves `lastSeen` forward.
+`mergeActivity` only ever moves `lastSeen` forward. The buffer is bounded, but **nothing in it
+expires before the first inventory** (that is the outage case above): after one, an entry
+unresolved for `PENDING_TTL_MS` (1 h, counted from its FIRST message) is dropped and no longer
+persisted, the map is capped at `MAX_PENDING`, and Zigbee2MQTT group names (`bridge/groups`) are
+never buffered — groups publish under the base topic like devices and never resolve.
+
+**Inventories.** An unreadable `bridge/devices` and a bare `[]` are ignored (Zigbee2MQTT always lists
+its coordinator, so `[]` is never a real inventory). A coordinator-only inventory IS honored, but
+`setZ2mDevices` keeps the activity map when the new inventory is empty: devices re-paired under the
+same IEEE address after a database reset find their history again.
 
 **Never-seen devices** are measured from `monitor.startedAt`, so a fresh install doesn't declare the
 whole network dead on its first tick. Losing the `/data` history has the mirror effect: a device that
 died last month looks healthy again for one full threshold.
+
+**Outages.** Silence only means something while the network can be heard (MQTT session up AND bridge
+not offline — `setListening` / `setBridgeOnline`). The monitor records each outage, and for the
+VERDICT only, a device that was still within its threshold when an outage began is measured from the
+END of that outage (`verdictReference`, `inGrace` in the snapshot): without it, an outage longer
+than the threshold declared every mains device silent on the first tick and "back" a minute later.
+A device already dead before the outage gets no grace (no false "back"); the displayed `Silence`
+gauge is never adjusted. The container being down is an outage too: `heard_at` in the `/data` file
+is when the previous run last heard the network, and a file without it is NOT guessed from the
+last-seen timestamps (that would revive a device already declared dead).
 
 **Gladys host API quirks** (each one cost a bug; the fake in `test/helpers/fakeGladys.js` reproduces
 them):
@@ -129,7 +148,8 @@ them):
   week's death nor misses one that happened while the container was down.
 - While the MQTT session is down or the bridge is offline the verdicts are **frozen**, not
   advanced: every device goes silent together then, and one event each would be a notification
-  storm about a single failure. A device still dead once the network is back is announced then.
+  storm about a single failure. A device still dead once the network is back is announced when its
+  post-outage grace runs out (one threshold after the reconnection, see **Outages**).
 - Events go out after the states, so a scene reading `Alive` sees the new value. A failed event is
   not retried. Never fire an event from a scene action handler (the scene would loop).
 - Scene/widget keys, field keys, variable and output keys are stored by the user's scenes and

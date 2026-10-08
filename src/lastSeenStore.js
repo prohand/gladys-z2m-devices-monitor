@@ -9,7 +9,10 @@
 //
 // The same file carries the last alive/silent verdict of each device (see
 // `transitions.js`): the scene triggers fire on a verdict FLIP, and a flip is
-// only a flip if the verdict before the restart is known.
+// only a flip if the verdict before the restart is known. And `heard_at`, the
+// last moment the monitor could hear the network: the container being down is
+// an outage, and the monitor forgives an outage only when it knows when it
+// began (see `DevicesMonitor.restore`).
 //
 // Writing is best-effort: a broken or read-only volume degrades the integration
 // to "forgets across restarts", it never takes it down.
@@ -29,11 +32,12 @@ import { createLogger } from '@gladysassistant/integration-sdk';
 
 const logger = createLogger({ name: 'store' });
 
-// Still 1: `verdicts` is an addition an older reader simply ignores, and a file
-// written before it reads as "no verdict yet" — a baseline, never a flip.
+// Still 1: `verdicts` and `heard_at` are additions an older reader simply
+// ignores, and a file written before them reads as "no verdict yet" — a
+// baseline, never a flip — and "no known outage".
 const FILE_VERSION = 1;
 
-/** @typedef {{devices: Record<string, {last_seen: number}>, verdicts: Record<string, boolean>}} PersistedHistory */
+/** @typedef {{devices: Record<string, {last_seen: number}>, verdicts: Record<string, boolean>, heardAt?: number|null}} PersistedHistory */
 
 export class LastSeenStore {
   /**
@@ -53,7 +57,7 @@ export class LastSeenStore {
    * @returns {Promise<PersistedHistory>} The history, empty on a first run or an unreadable file.
    */
   async load() {
-    const empty = { devices: {}, verdicts: {} };
+    const empty = { devices: {}, verdicts: {}, heardAt: null };
     let raw;
     try {
       raw = await readFile(this.filePath, 'utf8');
@@ -72,7 +76,8 @@ export class LastSeenStore {
       logger.info(`Restored ${Object.keys(parsed.devices).length} last-seen timestamps`);
       const verdicts =
         parsed.verdicts && typeof parsed.verdicts === 'object' ? parsed.verdicts : {};
-      return { devices: parsed.devices, verdicts };
+      const heardAt = Number.isFinite(parsed.heard_at) ? parsed.heard_at : null;
+      return { devices: parsed.devices, verdicts, heardAt };
     } catch (err) {
       logger.warn(`Ignoring ${this.filePath}: invalid JSON`, err);
       return empty;
@@ -89,6 +94,7 @@ export class LastSeenStore {
    * @param {object} history - What to persist.
    * @param {Record<string, {last_seen: number}>} history.devices - Last-seen map, keyed by IEEE address.
    * @param {Record<string, boolean>} [history.verdicts] - Last verdicts, keyed by IEEE address.
+   * @param {number|null} [history.heardAt] - Last moment the monitor could hear the network.
    * @returns {Promise<boolean>} True when the write succeeded.
    */
   save(history) {
@@ -134,9 +140,13 @@ export class LastSeenStore {
 
 /**
  * The on-disk shape of a history.
- * @param {{devices: object, verdicts?: object}} history - What to persist.
+ * @param {{devices: object, verdicts?: object, heardAt?: number|null}} history - What to persist.
  * @returns {object} The JSON document written to `/data`.
  */
-function toFile({ devices, verdicts = {} }) {
-  return { version: FILE_VERSION, devices, verdicts };
+function toFile({ devices, verdicts = {}, heardAt = null }) {
+  const file = { version: FILE_VERSION, devices, verdicts };
+  if (Number.isFinite(heardAt)) {
+    file.heard_at = heardAt;
+  }
+  return file;
 }

@@ -126,6 +126,40 @@ test('an outage that ends before anything is announced leaves nothing to say', (
   assert.deepEqual(transitions.diff(monitor.snapshot()), []);
 });
 
+// The false alert pair this used to produce: after an outage longer than the
+// threshold, every mains device "went silent" on the first tick, then "came
+// back" with its next report.
+test('an outage longer than the threshold announces nothing on reconnection', () => {
+  const { monitor, clock } = createMonitor();
+  monitor.setListening(true);
+  const transitions = new AliveTransitions();
+  transitions.diff(monitor.snapshot());
+
+  monitor.setListening(false);
+  clock.advanceMinutes(300);
+  assert.deepEqual(transitions.diff(monitor.snapshot(), { listening: false }), []);
+  monitor.setListening(true);
+  assert.deepEqual(transitions.diff(monitor.snapshot()), [], 'no silent on the first tick');
+
+  clock.advanceMinutes(2);
+  monitor.recordActivity('office plug');
+  assert.deepEqual(transitions.diff(monitor.snapshot()), [], 'and therefore no back either');
+});
+
+test('a device that really died during the outage is announced once its grace is over', () => {
+  const { monitor, clock } = createMonitor();
+  monitor.setListening(true);
+  const transitions = new AliveTransitions();
+  transitions.diff(monitor.snapshot());
+
+  monitor.setListening(false);
+  clock.advanceMinutes(300);
+  monitor.setListening(true);
+  assert.deepEqual(transitions.diff(monitor.snapshot()), []);
+  clock.advanceMinutes(121);
+  assert.deepEqual(describe(transitions.diff(monitor.snapshot())), ['silent:office plug']);
+});
+
 // Right after a restart the inventory has not arrived yet: an empty snapshot
 // must not wipe the verdicts restored from disk.
 test('the verdicts survive until the inventory arrives', () => {

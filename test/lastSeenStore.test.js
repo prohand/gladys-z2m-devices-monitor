@@ -20,7 +20,7 @@ async function createStore() {
   return { store: new LastSeenStore({ filePath }), filePath };
 }
 
-const EMPTY = { devices: {}, verdicts: {} };
+const EMPTY = { devices: {}, verdicts: {}, heardAt: null };
 
 test('a missing file reads as an empty history, without noise', async () => {
   const { store } = await createStore();
@@ -32,6 +32,7 @@ test('what is saved is what is loaded back', async () => {
   const history = {
     devices: { '0x00158d0001111111': { last_seen: 1767225600000 } },
     verdicts: { '0x00158d0001111111': false },
+    heardAt: 1767225700000,
   };
   assert.equal(await store.save(history), true);
   assert.deepEqual(await store.load(), history);
@@ -43,7 +44,7 @@ test('a file written before the verdicts existed still restores its timestamps',
   const { store, filePath } = await createStore();
   const devices = { a: { last_seen: 1 } };
   await writeFile(filePath, JSON.stringify({ version: 1, devices }), 'utf8');
-  assert.deepEqual(await store.load(), { devices, verdicts: {} });
+  assert.deepEqual(await store.load(), { devices, verdicts: {}, heardAt: null });
 });
 
 test('the file is written atomically, so a kill mid-write leaves no truncated JSON', async () => {

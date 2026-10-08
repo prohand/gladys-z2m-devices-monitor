@@ -249,8 +249,11 @@ Good to know about this trigger:
   silent, you get a second alert — which the counter scene below does not do;
 - **no flood when Zigbee2MQTT itself goes down**: while the broker is unreachable
   or the bridge is offline, no device is announced (they are all silent for the
-  same reason). Once the network is back, only the ones still quiet are
-  announced;
+  same reason). Once the network is back, every device that was still answering
+  when the outage began gets one full threshold to speak again: a plug that
+  reports every five minutes is not announced "silent" then "back" a minute
+  later. Only the ones still quiet after that are announced. A restart of the
+  integration counts as an outage;
 - **no alert on install or upgrade** for devices already silent: only a
   _change_ from alive to silent counts. That memory survives restarts;
 - the **A Zigbee device is back** trigger works the same way, to say "false
@@ -339,6 +342,13 @@ answering a wrong value.
 - **A device never heard from** gets one full threshold from the moment the
   monitor started before being flagged. A freshly installed integration does not
   declare the whole network dead on its first minute.
+- **After an outage** (broker unreachable, bridge offline, integration stopped),
+  a device that was answering when the outage began gets one full threshold,
+  counted from when the network is back, before being declared silent. Its
+  _Silence_ feature still shows the real time since its last message. A device
+  already silent before the outage stays silent.
+- **Zigbee2MQTT groups are ignored**: they publish under the same topic as the
+  devices, but they are not devices.
 
 ## Troubleshooting
 
