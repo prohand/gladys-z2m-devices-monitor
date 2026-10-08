@@ -70,6 +70,11 @@ MQTT broker → mqttClient.js → messageRouter.js → DevicesMonitor (pure stat
 - **`src/scenes.js`** — pure builders of the scene events and the scene action handlers
   (manifest `scene_triggers` / `scene_actions`).
 - **`src/widget.js`** — the dashboard widget content (manifest `widgets`), in the core vocabulary.
+- **`src/format.js`** — wording shared by the buttons (`actions.js`) and the widget, so neither
+  surface imports the other.
+- **`src/connectionStatus.js`** — what the Configuration screen status says
+  (`buildConnectionStatus`) and when it is re-sent (`ConnectionStatusReporter`: deduped, but a
+  failed delivery is never considered delivered).
 
 ### Invariants that are easy to break
 

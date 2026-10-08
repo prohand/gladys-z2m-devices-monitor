@@ -21,6 +21,11 @@
 import { GladysIntegration, logger } from '@gladysassistant/integration-sdk';
 import { listSilentDevices, refreshDevices, testConnection } from './src/actions.js';
 import { normalizeConfig } from './src/config.js';
+import {
+  ConnectionStatusReporter,
+  INITIALIZATION_FAILED_STATUS,
+  buildConnectionStatus,
+} from './src/connectionStatus.js';
 import { buildAllStates, buildDiscoveredDevices } from './src/devices/index.js';
 import { LastSeenStore } from './src/lastSeenStore.js';
 import { routeMessage } from './src/messageRouter.js';
@@ -39,9 +44,6 @@ const DISCOVERY_DEBOUNCE_MS = 2000;
 const DEVICE_CREATED_DEBOUNCE_MS = 1000;
 // The last-seen history only has to survive a restart, not every single report.
 const PERSIST_INTERVAL_MS = 5 * 60 * 1000;
-// How long we wait for `bridge/devices` before telling the user the base topic
-// is probably wrong.
-const INVENTORY_GRACE_MS = 30 * 1000;
 
 const gladys = new GladysIntegration();
 
@@ -50,6 +52,7 @@ const monitor = new DevicesMonitor({ config });
 const store = new LastSeenStore();
 const publisher = new StatePublisher({ gladys });
 const transitions = new AliveTransitions();
+const statusReporter = new ConnectionStatusReporter({ gladys });
 
 /** @type {MqttConnection | null} */
 let mqtt = null;
@@ -60,7 +63,6 @@ let persistTimer = null;
 /** @type {Set<string>} External ids of the devices the user just created. */
 const createdDevices = new Set();
 let mqttStartedAt = null;
-let lastConnectionStatus = null;
 let historyRestored = false;
 let widgetSignature = null;
 
@@ -168,12 +170,7 @@ gladys.on('connected', async () => {
     startTimers();
   } catch (err) {
     logger.error('Post-connection initialization failed', err);
-    await gladys
-      .setConnectionStatus(false, {
-        en: 'Initialization failed, check the integration logs.',
-        fr: "L'initialisation a échoué, consultez les logs de l'intégration.",
-      })
-      .catch(() => {});
+    await statusReporter.report(INITIALIZATION_FAILED_STATUS).catch(() => {});
   }
 });
 
@@ -332,48 +329,14 @@ function scheduleDiscoveryPublish() {
 }
 
 /**
- * Report the application-level status shown in the Configuration screen —
- * distinct from the container state machine: this integration can be RUNNING and
- * still unable to reach the MQTT broker.
+ * Report the application-level status shown in the Configuration screen (the
+ * decision and its dedupe live in `src/connectionStatus.js`).
+ * @returns {Promise<boolean>} True when a new status was sent.
  */
-async function refreshConnectionStatus() {
-  const status = buildConnectionStatus();
-  // Republishing the same status on every tick would be pure noise — but a
-  // different REASON for the same failure is worth showing.
-  const signature = `${status.connected}:${status.message?.en ?? ''}`;
-  if (signature === lastConnectionStatus) {
-    return;
-  }
-  lastConnectionStatus = signature;
-  await gladys.setConnectionStatus(status.connected, status.message);
-}
-
-/**
- * Decide what to report as the application-level status.
- * @returns {{connected: boolean, message?: {en: string, fr: string}}} The status to publish.
- */
-function buildConnectionStatus() {
-  if (!mqtt?.connected) {
-    const reason = mqtt?.lastError ? ` (${mqtt.lastError.message})` : '';
-    return {
-      connected: false,
-      message: {
-        en: `Cannot reach the MQTT broker at ${config.mqtt_url}${reason}.`,
-        fr: `Broker MQTT injoignable sur ${config.mqtt_url}${reason}.`,
-      },
-    };
-  }
-  const waitedLongEnough = Date.now() - (mqttStartedAt ?? Date.now()) > INVENTORY_GRACE_MS;
-  if (!monitor.inventoryReceivedAt && waitedLongEnough) {
-    return {
-      connected: false,
-      message: {
-        en: `Connected, but nothing on ${config.base_topic}/bridge/devices. Check the Zigbee2MQTT base topic.`,
-        fr: `Connecté, mais rien sur ${config.base_topic}/bridge/devices. Vérifiez le topic de base de Zigbee2MQTT.`,
-      },
-    };
-  }
-  return { connected: true };
+function refreshConnectionStatus() {
+  return statusReporter.report(
+    buildConnectionStatus({ mqtt, monitor, config, mqttStartedAt, now: Date.now() }),
+  );
 }
 
 // --- Timers --------------------------------------------------------------------

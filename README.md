@@ -97,6 +97,8 @@ The user documentation lists both names side by side.
 │  ├─ scenes.js                      # scene trigger events + scene action handlers
 │  ├─ widget.js                      # the dashboard widget content
 │  ├─ actions.js                     # the Configuration screen buttons
+│  ├─ connectionStatus.js            # the status shown on the Configuration screen
+│  ├─ format.js                      # wording shared by the buttons and the widget
 │  ├─ config.js                      # config defaults, normalization, parsing
 │  ├─ devices/                       # the Gladys device payloads
 │  │  ├─ index.js                    #   registry: discovery list + states

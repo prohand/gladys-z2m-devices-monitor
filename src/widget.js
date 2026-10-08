@@ -15,7 +15,7 @@
 // -----------------------------------------------------------------------------
 
 import { WIDGET_COLORS } from '@gladysassistant/integration-sdk';
-import { describeBridge, formatDuration } from './actions.js';
+import { describeBridge, formatDuration } from './format.js';
 import { filterByPowerSource, isBatteryPowered } from './monitor.js';
 
 export const WIDGET = {

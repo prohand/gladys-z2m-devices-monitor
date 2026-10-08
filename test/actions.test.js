@@ -1,11 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  formatDuration,
-  listSilentDevices,
-  refreshDevices,
-  testConnection,
-} from '../src/actions.js';
+import { listSilentDevices, refreshDevices, testConnection } from '../src/actions.js';
 import { normalizeConfig } from '../src/config.js';
 import { DevicesMonitor } from '../src/monitor.js';
 import { parseBridgeDevices } from '../src/z2m/payloads.js';
@@ -118,12 +113,4 @@ test('refresh_devices refuses to publish before the inventory arrived', async ()
   });
   assert.equal(called, false);
   assert.match(message.en, /not been received yet/);
-});
-
-test('formatDuration switches unit as the silence grows', () => {
-  assert.equal(formatDuration(0), '0 min');
-  assert.equal(formatDuration(42), '42 min');
-  assert.equal(formatDuration(185), '3 h 5 min');
-  assert.equal(formatDuration(4500), '3 d 3 h');
-  assert.equal(formatDuration(4500, 'fr'), '3 j 3 h');
 });
