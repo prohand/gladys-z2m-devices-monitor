@@ -7,6 +7,8 @@
 // multi-language message, displayed under its button.
 // -----------------------------------------------------------------------------
 
+import { redactBrokerUrl } from './config.js';
+import { describeBridge, formatDuration } from './format.js';
 import { isBatteryPowered } from './monitor.js';
 
 // Enough to be useful in the small box under the button, short enough to stay
@@ -24,6 +26,8 @@ const MAX_LISTED_DEVICES = 15;
  * @returns {{en: string, fr: string}} The message shown under the button.
  */
 export function testConnection({ mqtt, monitor, config }) {
+  // Never quote credentials typed into the URL (`mqtt://user:pass@host`).
+  const url = redactBrokerUrl(config.mqtt_url);
   if (!mqtt) {
     return {
       en: 'The monitor is not started yet, try again in a few seconds.',
@@ -36,24 +40,24 @@ export function testConnection({ mqtt, monitor, config }) {
     mqtt.reconnectNow();
     const reason = mqtt.lastError ? ` (${mqtt.lastError.message})` : '';
     return {
-      en: `Not connected to ${config.mqtt_url}${reason}. Check the URL, the credentials and that the broker is reachable from Gladys.`,
-      fr: `Non connecté à ${config.mqtt_url}${reason}. Vérifiez l'URL, les identifiants et que le broker est joignable depuis Gladys.`,
+      en: `Not connected to ${url}${reason}. Check the URL, the credentials and that the broker is reachable from Gladys.`,
+      fr: `Non connecté à ${url}${reason}. Vérifiez l'URL, les identifiants et que le broker est joignable depuis Gladys.`,
     };
   }
 
   const snapshot = monitor.snapshot();
   if (!snapshot.summary.inventoryReceived) {
     return {
-      en: `Connected to ${config.mqtt_url}, but nothing was received on ${config.base_topic}/bridge/devices. Check the base topic configured in Zigbee2MQTT.`,
-      fr: `Connecté à ${config.mqtt_url}, mais rien reçu sur ${config.base_topic}/bridge/devices. Vérifiez le topic de base configuré dans Zigbee2MQTT.`,
+      en: `Connected to ${url}, but nothing was received on ${config.base_topic}/bridge/devices. Check the base topic configured in Zigbee2MQTT.`,
+      fr: `Connecté à ${url}, mais rien reçu sur ${config.base_topic}/bridge/devices. Vérifiez le topic de base configuré dans Zigbee2MQTT.`,
     };
   }
 
   const { monitored, silent } = snapshot.summary;
   const bridge = describeBridge(snapshot.summary.bridgeOnline);
   return {
-    en: `Connected to ${config.mqtt_url}. ${monitored} device(s) watched, ${silent} silent, ${mqtt.messagesReceived} message(s) received. Zigbee2MQTT bridge: ${bridge.en}.`,
-    fr: `Connecté à ${config.mqtt_url}. ${monitored} appareil(s) surveillé(s), ${silent} silencieux, ${mqtt.messagesReceived} message(s) reçu(s). Bridge Zigbee2MQTT : ${bridge.fr}.`,
+    en: `Connected to ${url}. ${monitored} device(s) watched, ${silent} silent, ${mqtt.messagesReceived} message(s) received. Zigbee2MQTT bridge: ${bridge.en}.`,
+    fr: `Connecté à ${url}. ${monitored} appareil(s) surveillé(s), ${silent} silencieux, ${mqtt.messagesReceived} message(s) reçu(s). Bridge Zigbee2MQTT : ${bridge.fr}.`,
   };
 }
 
@@ -127,36 +131,4 @@ function describeSilentDevice(device, language) {
   const power = isBatteryPowered(device) ? (language === 'en' ? 'battery' : 'pile') : null;
   const details = [since, power].filter(Boolean).join(', ');
   return `${device.friendlyName} (${details})`;
-}
-
-/**
- * Format a duration in minutes as a compact human string.
- * @param {number} minutes - Duration in minutes.
- * @param {'en'|'fr'} language - Output language.
- * @returns {string} e.g. "3 d 4 h", "5 h 12 min", "42 min".
- */
-export function formatDuration(minutes, language = 'en') {
-  const days = Math.floor(minutes / 1440);
-  const hours = Math.floor((minutes % 1440) / 60);
-  const remainder = Math.floor(minutes % 60);
-  const dayUnit = language === 'en' ? 'd' : 'j';
-  if (days > 0) {
-    return `${days} ${dayUnit} ${hours} h`;
-  }
-  if (hours > 0) {
-    return `${hours} h ${remainder} min`;
-  }
-  return `${remainder} min`;
-}
-
-/**
- * Describe the bridge state, including the "we have not heard from it" case.
- * @param {boolean|null} bridgeOnline - Bridge state held by the monitor.
- * @returns {{en: string, fr: string}} A short multi-language label.
- */
-export function describeBridge(bridgeOnline) {
-  if (bridgeOnline === null) {
-    return { en: 'unknown', fr: 'inconnu' };
-  }
-  return bridgeOnline ? { en: 'online', fr: 'en ligne' } : { en: 'offline', fr: 'hors ligne' };
 }

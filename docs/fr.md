@@ -55,6 +55,8 @@ obligatoire.
 | **URL du broker**                    | L'adresse de votre broker MQTT, par exemple `mqtt://192.168.1.10:1883`. Les schémas `mqtts://`, `ws://` et `wss://` sont acceptés. Saisir l'adresse seule (`192.168.1.10:1884`) fonctionne : `mqtt://` est ajouté pour vous. |
 | **Nom d'utilisateur / Mot de passe** | À laisser vides si votre broker accepte les connexions anonymes.                                                                                                                                                             |
 | **Topic de base**                    | Le `mqtt.base_topic` configuré dans Zigbee2MQTT. `zigbee2mqtt` dans la quasi-totalité des cas.                                                                                                                               |
+| **Certificat de l'autorité (PEM)**   | Uniquement en `mqtts://` ou `wss://` avec un certificat auto-signé ou une autorité privée : collez le certificat de l'autorité (ou celui, auto-signé, du broker). Le coller sur une seule ligne convient.                    |
+| **Vérifier le certificat du broker** | Activé par défaut. Le désactiver accepte n'importe quel certificat — y compris celui d'une machine qui se ferait passer pour votre broker. Préférez le certificat ci-dessus.                                                 |
 
 Cliquez ensuite sur **Tester la connexion MQTT** : le bouton indique s'il est
 connecté, combien d'appareils il voit et combien de messages il a reçus. C'est le
@@ -261,8 +263,12 @@ Bon à savoir sur ce déclencheur :
   compteur ci-dessous ne fait pas ;
 - **pas d'avalanche quand c'est Zigbee2MQTT qui tombe** : tant que le broker est
   injoignable ou que le bridge est hors ligne, aucun appareil n'est annoncé (tous
-  se taisent pour la même raison). Au retour du réseau, seuls ceux qui restent
-  muets sont annoncés ;
+  se taisent pour la même raison). Au retour du réseau, chaque appareil qui
+  répondait encore au début de la coupure dispose d'un seuil complet pour se
+  manifester à nouveau : une prise qui parle toutes les cinq minutes n'est donc
+  pas annoncée « silencieuse » puis « revenue » une minute plus tard. Seuls ceux
+  qui restent muets au-delà sont annoncés. Un redémarrage de l'intégration
+  compte comme une coupure ;
 - **pas d'alerte à l'installation ni à la mise à jour** pour les appareils déjà
   silencieux : seul un _passage_ de « en vie » à « silencieux » compte. Ce
   souvenir survit aux redémarrages ;
@@ -357,12 +363,29 @@ que de répondre une valeur fausse.
 - **Un appareil jamais entendu** dispose d'un seuil complet à partir du démarrage
   du moniteur avant d'être signalé. Une intégration fraîchement installée ne
   déclare donc pas tout le réseau mort à la première minute.
+- **Après une coupure** (broker injoignable, bridge hors ligne, intégration
+  arrêtée), un appareil qui répondait au début de la coupure dispose d'un seuil
+  complet, compté depuis le retour du réseau, avant d'être déclaré silencieux.
+  Sa fonctionnalité _Silence_ continue pourtant d'afficher la durée réelle
+  depuis son dernier message. Un appareil déjà silencieux avant la coupure le
+  reste. Le prix de ce choix : un appareil vraiment mort pendant la coupure est
+  signalé plus tard que d'habitude, au plus de la durée de la coupure — plutôt
+  que tous les appareils secteur signalés silencieux puis de retour à la fin
+  d'une seule panne.
+- **Les groupes Zigbee2MQTT sont ignorés** : ils publient sous le même topic que
+  les appareils, mais ne sont pas des appareils.
 
 ## En cas de problème
 
 **Le bouton de test dit qu'il n'est pas connecté.** Vérifiez l'URL (avec le port,
 `1883` par défaut), les identifiants, et que le broker autorise les connexions
-depuis l'adresse de Gladys.
+depuis l'adresse de Gladys. Des identifiants écrits dans l'URL
+(`mqtt://utilisateur:motdepasse@hote`) fonctionnent, mais ils sont affichés `***`
+dans les messages et les logs.
+
+**Le bouton de test parle d'un certificat auto-signé (« self-signed »).** Votre
+broker `mqtts://` utilise un certificat que Node ne reconnaît pas : collez son
+autorité de certification dans **Certificat de l'autorité (PEM)** (section TLS).
 
 **Il est connecté, mais ne voit aucun appareil.** Le topic de base ne correspond
 probablement pas à celui de Zigbee2MQTT. Comparez-le avec `mqtt.base_topic` dans

@@ -1,11 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  formatDuration,
-  listSilentDevices,
-  refreshDevices,
-  testConnection,
-} from '../src/actions.js';
+import { listSilentDevices, refreshDevices, testConnection } from '../src/actions.js';
 import { normalizeConfig } from '../src/config.js';
 import { DevicesMonitor } from '../src/monitor.js';
 import { parseBridgeDevices } from '../src/z2m/payloads.js';
@@ -120,10 +115,22 @@ test('refresh_devices refuses to publish before the inventory arrived', async ()
   assert.match(message.en, /not been received yet/);
 });
 
-test('formatDuration switches unit as the silence grows', () => {
-  assert.equal(formatDuration(0), '0 min');
-  assert.equal(formatDuration(42), '42 min');
-  assert.equal(formatDuration(185), '3 h 5 min');
-  assert.equal(formatDuration(4500), '3 d 3 h');
-  assert.equal(formatDuration(4500, 'fr'), '3 j 3 h');
+// `mqtt://user:pass@host` is a URL users do type: the answer under the button
+// must not print the password back.
+test('test_connection never quotes the credentials of the broker URL', () => {
+  const { monitor, config } = createContext({ mqtt_url: 'mqtt://gladys:s3cret@broker:1883' });
+  const answers = [
+    testConnection({ mqtt: connectedMqtt, monitor, config }),
+    testConnection({
+      mqtt: { connected: false, lastError: null, messagesReceived: 0, reconnectNow() {} },
+      monitor,
+      config,
+    }),
+  ];
+  for (const answer of answers) {
+    for (const text of [answer.en, answer.fr]) {
+      assert.doesNotMatch(text, /s3cret|gladys:/);
+      assert.match(text, /mqtt:\/\/\*\*\*@broker:1883/);
+    }
+  }
 });

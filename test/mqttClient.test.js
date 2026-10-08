@@ -9,7 +9,12 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createServer as createTlsServer } from 'node:tls';
 import { once } from 'node:events';
 import { Aedes } from 'aedes';
 import mqtt from 'mqtt';
@@ -19,20 +24,23 @@ import { normalizeConfig } from '../src/config.js';
 // rightly — as an error. Pin the level BEFORE the module builds its logger so
 // the expected failure does not look like a broken test run.
 process.env.LOG_LEVEL = 'silent';
-const { MqttConnection, sameBrokerConfig } = await import('../src/mqttClient.js');
+const { MqttConnection, buildConnectOptions, sameBrokerConfig } =
+  await import('../src/mqttClient.js');
 
 /**
  * Start an in-process MQTT broker on a free port.
+ * @param {object} [options] - Options.
+ * @param {{key: Buffer, cert: Buffer}} [options.tls] - Serve MQTT over TLS with this key pair.
  * @returns {Promise<{url: string, aedes: object, close: () => Promise<void>}>} The running broker.
  */
-async function startBroker() {
+async function startBroker({ tls } = {}) {
   const aedes = await Aedes.createBroker();
-  const server = createServer(aedes.handle);
+  const server = tls ? createTlsServer(tls, aedes.handle) : createServer(aedes.handle);
   server.listen(0);
   await once(server, 'listening');
   const { port } = server.address();
   return {
-    url: `mqtt://127.0.0.1:${port}`,
+    url: tls ? `mqtts://localhost:${port}` : `mqtt://127.0.0.1:${port}`,
     aedes,
     async close() {
       await new Promise((resolve) => server.close(resolve));
@@ -192,4 +200,160 @@ test('sameBrokerConfig only reacts to what actually changes the session', () => 
     false,
   );
   assert.equal(sameBrokerConfig(base, normalizeConfig({ ...base, mqtt_password: 'x' })), false);
+  assert.equal(
+    sameBrokerConfig(base, normalizeConfig({ ...base, mqtt_reject_unauthorized: false })),
+    false,
+    'a TLS setting changes the session',
+  );
+  assert.equal(
+    sameBrokerConfig(
+      base,
+      normalizeConfig({
+        ...base,
+        mqtt_ca_certificate: '-----BEGIN CERTIFICATE-----AAAA-----END CERTIFICATE-----',
+      }),
+    ),
+    false,
+  );
 });
+
+test('the TLS settings reach the connect options', () => {
+  const secure = buildConnectOptions(
+    normalizeConfig({
+      mqtt_ca_certificate: '-----BEGIN CERTIFICATE-----AAAA-----END CERTIFICATE-----',
+    }),
+  );
+  assert.deepEqual(secure.ca, ['-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----\n']);
+  assert.equal(secure.rejectUnauthorized, true);
+
+  const plain = buildConnectOptions(normalizeConfig({ mqtt_reject_unauthorized: false }));
+  assert.equal(plain.ca, undefined, 'no CA: the system store applies');
+  assert.equal(plain.rejectUnauthorized, false);
+});
+
+// `resubscribe: true` makes mqtt.js re-send the topics it holds on every
+// reconnection, and the `connect` handler subscribes too: the broker must
+// still see ONE subscription per session, not two.
+test('a reconnection subscribes once, not twice', async () => {
+  const broker = await startBroker();
+  const subscriptions = [];
+  broker.aedes.on('subscribe', (subs) => subscriptions.push(...subs.map((sub) => sub.topic)));
+  const statuses = [];
+  const connection = new MqttConnection({
+    config: normalizeConfig({ mqtt_url: broker.url }),
+    onMessage: () => {},
+    onStatusChange: (connected) => statuses.push(connected),
+    reconnectPeriodMs: 50,
+  });
+
+  try {
+    connection.start();
+    await waitFor(() => subscriptions.length === 1, 'the first subscription');
+    // The broker drops the session: mqtt.js reconnects on its own.
+    for (const client of Object.values(broker.aedes.clients)) {
+      client.close();
+    }
+    await waitFor(() => statuses.length >= 3, 'the reconnection to be reported');
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    assert.deepEqual(subscriptions, ['zigbee2mqtt/#', 'zigbee2mqtt/#'], 'one per session');
+    assert.deepEqual(statuses.slice(0, 3), [true, false, true]);
+  } finally {
+    await connection.stop();
+    await broker.close();
+  }
+});
+
+// --- TLS against a self-signed broker --------------------------------------------
+
+/**
+ * Generate a self-signed certificate for `localhost`, or undefined when no
+ * `openssl` binary is around (the test is then skipped, not failed).
+ * @returns {{key: Buffer, cert: Buffer} | undefined} The key pair.
+ */
+function generateSelfSignedCertificate() {
+  try {
+    const directory = mkdtempSync(join(tmpdir(), 'z2m-monitor-tls-'));
+    const key = join(directory, 'key.pem');
+    const cert = join(directory, 'cert.pem');
+    execFileSync(
+      'openssl',
+      [
+        'req',
+        '-x509',
+        '-newkey',
+        'rsa:2048',
+        '-nodes',
+        '-keyout',
+        key,
+        '-out',
+        cert,
+        '-days',
+        '1',
+        '-subj',
+        '/CN=localhost',
+        '-addext',
+        'subjectAltName=DNS:localhost,IP:127.0.0.1',
+      ],
+      { stdio: 'ignore' },
+    );
+    return { key: readFileSync(key), cert: readFileSync(cert) };
+  } catch {
+    return undefined;
+  }
+}
+
+const selfSigned = generateSelfSignedCertificate();
+const noOpenssl = selfSigned ? false : 'openssl is not available';
+
+/**
+ * Connect to a TLS broker with some TLS settings and report what happened.
+ * @param {Record<string, unknown>} tlsConfig - TLS configuration fields.
+ * @returns {Promise<{connected: boolean, lastError: Error|null}>} The outcome.
+ */
+async function connectOverTls(tlsConfig) {
+  const broker = await startBroker({ tls: selfSigned });
+  const connection = new MqttConnection({
+    config: normalizeConfig({ mqtt_url: broker.url, ...tlsConfig }),
+    onMessage: () => {},
+  });
+  try {
+    connection.start();
+    await waitFor(
+      () => connection.connected || connection.lastError !== null,
+      'the TLS handshake to succeed or fail',
+    );
+    return { connected: connection.connected, lastError: connection.lastError };
+  } finally {
+    await connection.stop();
+    await broker.close();
+  }
+}
+
+test('a self-signed broker is refused by default', { skip: noOpenssl }, async () => {
+  const outcome = await connectOverTls({});
+  assert.equal(outcome.connected, false);
+  assert.match(outcome.lastError.message, /self[- ]signed/i);
+});
+
+test(
+  'a self-signed broker is reached with its certificate pasted on one line',
+  {
+    skip: noOpenssl,
+  },
+  async () => {
+    const oneLine = selfSigned?.cert.toString('utf8').replace(/\r?\n/g, '');
+    const outcome = await connectOverTls({ mqtt_ca_certificate: oneLine });
+    assert.equal(outcome.connected, true);
+  },
+);
+
+test(
+  'a self-signed broker is reached with the verification turned off',
+  {
+    skip: noOpenssl,
+  },
+  async () => {
+    const outcome = await connectOverTls({ mqtt_reject_unauthorized: false });
+    assert.equal(outcome.connected, true);
+  },
+);

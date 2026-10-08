@@ -49,11 +49,13 @@ required.
 
 ### 2. Configuration
 
-| Field                   | What to fill in                                                                                                                                                                                                     |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Broker URL**          | The address of your MQTT broker, e.g. `mqtt://192.168.1.10:1883`. The `mqtts://`, `ws://` and `wss://` schemes are supported too. Typing the address alone (`192.168.1.10:1884`) works: `mqtt://` is added for you. |
-| **Username / Password** | Leave empty if your broker allows anonymous connections.                                                                                                                                                            |
-| **Base topic**          | The `mqtt.base_topic` configured in Zigbee2MQTT. `zigbee2mqtt` in almost every case.                                                                                                                                |
+| Field                             | What to fill in                                                                                                                                                                                                     |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Broker URL**                    | The address of your MQTT broker, e.g. `mqtt://192.168.1.10:1883`. The `mqtts://`, `ws://` and `wss://` schemes are supported too. Typing the address alone (`192.168.1.10:1884`) works: `mqtt://` is added for you. |
+| **Username / Password**           | Leave empty if your broker allows anonymous connections.                                                                                                                                                            |
+| **Base topic**                    | The `mqtt.base_topic` configured in Zigbee2MQTT. `zigbee2mqtt` in almost every case.                                                                                                                                |
+| **CA certificate (PEM)**          | Only for `mqtts://` or `wss://` with a self-signed certificate or a private authority: paste the certificate of that authority (or the broker's own self-signed one). Pasting it on a single line is fine.          |
+| **Verify the broker certificate** | On by default. Turning it off accepts any certificate — including the one of a machine pretending to be your broker. Prefer the certificate above.                                                                  |
 
 Then click **Test the MQTT connection**: the button reports whether it is
 connected, how many devices it sees and how many messages it received. It is the
@@ -249,8 +251,11 @@ Good to know about this trigger:
   silent, you get a second alert — which the counter scene below does not do;
 - **no flood when Zigbee2MQTT itself goes down**: while the broker is unreachable
   or the bridge is offline, no device is announced (they are all silent for the
-  same reason). Once the network is back, only the ones still quiet are
-  announced;
+  same reason). Once the network is back, every device that was still answering
+  when the outage began gets one full threshold to speak again: a plug that
+  reports every five minutes is not announced "silent" then "back" a minute
+  later. Only the ones still quiet after that are announced. A restart of the
+  integration counts as an outage;
 - **no alert on install or upgrade** for devices already silent: only a
   _change_ from alive to silent counts. That memory survives restarts;
 - the **A Zigbee device is back** trigger works the same way, to say "false
@@ -339,12 +344,27 @@ answering a wrong value.
 - **A device never heard from** gets one full threshold from the moment the
   monitor started before being flagged. A freshly installed integration does not
   declare the whole network dead on its first minute.
+- **After an outage** (broker unreachable, bridge offline, integration stopped),
+  a device that was answering when the outage began gets one full threshold,
+  counted from when the network is back, before being declared silent. Its
+  _Silence_ feature still shows the real time since its last message. A device
+  already silent before the outage stays silent. The price of this: a device
+  that really died during the outage is reported later than usual, by at most
+  the length of the outage — rather than every mains device being reported
+  silent, then back, at the end of a single failure.
+- **Zigbee2MQTT groups are ignored**: they publish under the same topic as the
+  devices, but they are not devices.
 
 ## Troubleshooting
 
 **The test button says it is not connected.** Check the URL (with the port,
 `1883` by default), the credentials, and that the broker accepts connections from
-the Gladys machine.
+the Gladys machine. Credentials written into the URL (`mqtt://user:pass@host`)
+work, but they are shown as `***` in the messages and the logs.
+
+**The test button mentions a self-signed certificate.** Your `mqtts://` broker
+uses a certificate Node does not trust: paste its certificate authority in **CA
+certificate (PEM)** (TLS section).
 
 **It is connected, but sees no device.** The base topic probably does not match
 the one Zigbee2MQTT uses. Compare it with `mqtt.base_topic` in your

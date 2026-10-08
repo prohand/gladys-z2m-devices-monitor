@@ -7,6 +7,7 @@ const KNOWN = new Set(['kitchen/motion', 'office plug']);
 
 test('the bridge topics are recognized', () => {
   assert.equal(parseTopic(`${BASE}/bridge/devices`, BASE, KNOWN).kind, TOPIC_KINDS.BRIDGE_DEVICES);
+  assert.equal(parseTopic(`${BASE}/bridge/groups`, BASE, KNOWN).kind, TOPIC_KINDS.BRIDGE_GROUPS);
   assert.equal(parseTopic(`${BASE}/bridge/state`, BASE, KNOWN).kind, TOPIC_KINDS.BRIDGE_STATE);
   assert.equal(parseTopic(`${BASE}/bridge/event`, BASE, KNOWN).kind, TOPIC_KINDS.BRIDGE_EVENT);
   assert.equal(parseTopic(`${BASE}/bridge/info`, BASE, KNOWN).kind, TOPIC_KINDS.BRIDGE_OTHER);

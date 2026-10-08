@@ -21,12 +21,18 @@
 import { GladysIntegration, logger } from '@gladysassistant/integration-sdk';
 import { listSilentDevices, refreshDevices, testConnection } from './src/actions.js';
 import { normalizeConfig } from './src/config.js';
+import {
+  ConnectionStatusReporter,
+  INITIALIZATION_FAILED_STATUS,
+  buildConnectionStatus,
+} from './src/connectionStatus.js';
 import { buildAllStates, buildDiscoveredDevices } from './src/devices/index.js';
 import { LastSeenStore } from './src/lastSeenStore.js';
 import { routeMessage } from './src/messageRouter.js';
 import { MqttConnection, sameBrokerConfig } from './src/mqttClient.js';
 import { DevicesMonitor } from './src/monitor.js';
 import { SCENE_ACTION, buildSceneEvents, getDeviceStatus, getSilentDevices } from './src/scenes.js';
+import { singleFlight } from './src/singleFlight.js';
 import { StatePublisher } from './src/statePublisher.js';
 import { AliveTransitions } from './src/transitions.js';
 import { WIDGET, buildNetworkHealthWidget, networkHealthSignature } from './src/widget.js';
@@ -39,9 +45,6 @@ const DISCOVERY_DEBOUNCE_MS = 2000;
 const DEVICE_CREATED_DEBOUNCE_MS = 1000;
 // The last-seen history only has to survive a restart, not every single report.
 const PERSIST_INTERVAL_MS = 5 * 60 * 1000;
-// How long we wait for `bridge/devices` before telling the user the base topic
-// is probably wrong.
-const INVENTORY_GRACE_MS = 30 * 1000;
 
 const gladys = new GladysIntegration();
 
@@ -50,6 +53,7 @@ const monitor = new DevicesMonitor({ config });
 const store = new LastSeenStore();
 const publisher = new StatePublisher({ gladys });
 const transitions = new AliveTransitions();
+const statusReporter = new ConnectionStatusReporter({ gladys });
 
 /** @type {MqttConnection | null} */
 let mqtt = null;
@@ -60,14 +64,23 @@ let persistTimer = null;
 /** @type {Set<string>} External ids of the devices the user just created. */
 const createdDevices = new Set();
 let mqttStartedAt = null;
-let lastConnectionStatus = null;
-let historyRestored = false;
 let widgetSignature = null;
+// True until the configuration was read from Gladys at least once: before that,
+// `config` holds the defaults and the broker must not be dialed with them.
+let configLoaded = false;
+// The discovery list must be (re)published on the next pass.
+let discoveryDirty = true;
+let discoveredCount = 0;
+
+// Every publication goes through ONE pass, never two at a time: see
+// `src/singleFlight.js` for what interleaved passes used to cost.
+const runPublishPass = singleFlight(publishPass);
+const loadConfiguration = singleFlight(fetchConfiguration);
 
 // --- Discovery: Gladys asks for the list of devices --------------------------
 gladys.onScanRequest(async () => {
   logger.info('onScanRequest -> publishing discovered devices');
-  await publishDevices();
+  await requestPublish({ discovery: true });
 });
 
 // --- The user added one of the discovered devices ----------------------------
@@ -92,7 +105,15 @@ gladys.onDeviceUpdated((device) => {
 // --- Manifest actions: buttons in the Configuration screen -------------------
 gladys.onAction('test_connection', () => testConnection({ mqtt, monitor, config }));
 gladys.onAction('list_silent_devices', () => listSilentDevices({ monitor }));
-gladys.onAction('refresh_devices', () => refreshDevices({ monitor, publishDevices }));
+gladys.onAction('refresh_devices', () =>
+  refreshDevices({
+    monitor,
+    publishDevices: async () => {
+      await requestPublish({ discovery: true });
+      return discoveredCount;
+    },
+  }),
+);
 
 // --- Scene actions: blocks of the Gladys scene editor (Gladys >= 5.1.0) ------
 // Read-only answers from the monitor. Never fire a scene event from here: a
@@ -112,77 +133,89 @@ gladys.onWidgetGet(WIDGET.NETWORK_HEALTH, ({ settings }) =>
 // --- Configuration updated by the user ---------------------------------------
 gladys.onConfigUpdated(async (newConfig) => {
   logger.info('onConfigUpdated -> new configuration received');
-  const previousConfig = config;
-  config = normalizeConfig(newConfig);
-  monitor.setConfig(config);
-
-  // Only a change of broker, credentials or base topic justifies dropping the
-  // MQTT session; new thresholds apply on the next tick for free.
-  if (mqtt && !sameBrokerConfig(previousConfig, config)) {
-    logger.info('Broker configuration changed -> reconnecting');
-    await mqtt.stop();
-    mqtt = null;
-    startMqtt();
-  }
-
+  await applyConfig(newConfig);
   // The ignore list changes who is discovered, and the thresholds change every
   // verdict: republish both lists.
-  await publishDevices();
-  await publishStates();
-
-  // The watchdog interval is read when the timer is armed: re-arm it, or a new
-  // `check_interval_seconds` would only apply after the next reconnection.
-  if (tickTimer && previousConfig.check_interval_seconds !== config.check_interval_seconds) {
-    startTickTimer();
-  }
+  await requestPublish({ discovery: true });
 });
 
 // --- Connection lifecycle ----------------------------------------------------
 // The SDK logs the WebSocket lifecycle itself (under `gladys-sdk`); these
 // handlers only run the integration's own (re)initialization.
 gladys.on('connected', async () => {
+  // Gladys resynchronized on its side: push the full picture again, status
+  // included.
+  statusReporter.reset();
+  publisher.reset();
+  discoveryDirty = true;
+
+  // The watchdog is armed FIRST: whatever fails below (a 429 or a 5xx from the
+  // host API on the full republication, a configuration that cannot be read
+  // yet), the next tick retries it. Armed last, one transient failure left a
+  // reconnected integration with no watchdog at all until the next reconnection.
+  startTimers();
+
   try {
-    // 1) Fetch the configuration filled in by the user.
-    config = normalizeConfig(await gladys.getConfig());
-    monitor.setConfig(config);
-
-    // 2) Replay the last-seen history and the last verdicts persisted by the
-    //    previous run — once: a Gladys reconnection must not rewind what we
-    //    learned since.
-    if (!historyRestored) {
-      const history = await store.load();
-      monitor.restore(history.devices);
-      transitions.restore(history.verdicts);
-      historyRestored = true;
+    await loadConfiguration();
+    await requestPublish();
+    // A session opened just now reports itself once subscribed; reporting it
+    // here would flash "cannot reach the broker" while it is still dialing.
+    if (mqtt?.connected) {
+      await refreshConnectionStatus();
     }
-
-    // 3) (Re)connect to the MQTT broker Zigbee2MQTT publishes on.
-    startMqtt();
-
-    // 4) Gladys resynchronized on its side: push the full picture again.
-    publisher.reset();
-    await publishDevices();
-    await publishStates();
-
-    // 5) Run the watchdog.
-    startTimers();
   } catch (err) {
-    logger.error('Post-connection initialization failed', err);
-    await gladys
-      .setConnectionStatus(false, {
-        en: 'Initialization failed, check the integration logs.',
-        fr: "L'initialisation a échoué, consultez les logs de l'intégration.",
-      })
-      .catch(() => {});
+    logger.error('Post-connection initialization failed, retrying on the next tick', err);
+    await statusReporter.report(INITIALIZATION_FAILED_STATUS).catch(() => {});
   }
 });
 
 gladys.on('disconnected', () => {
-  // Keep the MQTT session and the last-seen history: Gladys being unreachable
-  // says nothing about the Zigbee network, and dropping the history here would
-  // hand every device a fresh threshold on reconnection.
+  // Keep the MQTT session, the last-seen history AND its persistence: Gladys
+  // being unreachable says nothing about the Zigbee network, which keeps
+  // talking — dropping or no longer saving what it says would hand every device
+  // a fresh threshold after a restart.
   stopTimers();
 });
+
+// --- Configuration ---------------------------------------------------------------
+
+/**
+ * Read the configuration from Gladys and apply it (single-flight: the
+ * reconnection and a tick retrying a failed one never interleave).
+ * @returns {Promise<void>} Resolves once the configuration is applied.
+ */
+async function fetchConfiguration() {
+  await applyConfig(await gladys.getConfig());
+}
+
+/**
+ * Apply a configuration: thresholds, broker session, watchdog interval.
+ * @param {Record<string, unknown>} rawConfig - Configuration as the SDK hands it.
+ * @returns {Promise<void>} Resolves once the MQTT session follows the new configuration.
+ */
+async function applyConfig(rawConfig) {
+  const previousConfig = config;
+  config = normalizeConfig(rawConfig);
+  configLoaded = true;
+  monitor.setConfig(config);
+
+  // Only a change of broker, credentials or base topic justifies dropping the
+  // MQTT session; new thresholds apply on the next tick for free.
+  if (mqtt && !sameBrokerConfig(previousConfig, config)) {
+    logger.info('Broker configuration changed -> reconnecting');
+    const previous = mqtt;
+    mqtt = null;
+    monitor.setListening(false);
+    await previous.stop();
+  }
+  startMqtt();
+
+  // The watchdog interval is read when the timer is armed: re-arm it, or a new
+  // `check_interval_seconds` would only apply after the next reconnection.
+  if (tickTimer && previousConfig.check_interval_seconds !== config.check_interval_seconds) {
+    startTickTimer();
+  }
+}
 
 // --- MQTT ---------------------------------------------------------------------
 
@@ -195,7 +228,10 @@ function startMqtt() {
   mqtt = new MqttConnection({
     config,
     onMessage: handleMqttMessage,
-    onStatusChange: () => {
+    onStatusChange: (connected) => {
+      // The monitor forgives the silence of an outage: it has to know when one
+      // begins and ends (see `DevicesMonitor.setListening`).
+      monitor.setListening(connected);
       refreshConnectionStatus().catch((err) =>
         logger.error('Failed to report the connection status', err),
       );
@@ -226,18 +262,58 @@ function handleMqttMessage(topic, payload, { retained }) {
 // --- Publishing ----------------------------------------------------------------
 
 /**
+ * Ask for a publish pass; resolves once a pass that started AFTER this request
+ * is over (see `src/singleFlight.js`).
+ * @param {object} [options] - Options.
+ * @param {boolean} [options.discovery] - Republish the discovery list too.
+ * @returns {Promise<void>} Resolves once the pass is over, rejects when it failed.
+ */
+function requestPublish({ discovery = false } = {}) {
+  if (discovery) {
+    discoveryDirty = true;
+  }
+  return runPublishPass();
+}
+
+/**
+ * One publish pass: the discovery list when it is due, then the states, the
+ * scene events and the widget nudge.
+ *
+ * A failed discovery publish stays due (the next pass retries it) and does not
+ * hold the states back — `Alive` is the alert; its error is rethrown once the
+ * states are out, so a button waiting on it still reports the failure.
+ * @returns {Promise<void>} Resolves once everything due was published.
+ */
+async function publishPass() {
+  // Zigbee2MQTT keeps talking while Gladys is unreachable; publishing then would
+  // only fill the logs with failures. The reconnection republishes everything.
+  if (!gladys.connected || !configLoaded) {
+    return;
+  }
+  let discoveryError = null;
+  if (discoveryDirty) {
+    discoveryDirty = false;
+    try {
+      await publishDevices();
+    } catch (err) {
+      discoveryDirty = true;
+      discoveryError = err;
+    }
+  }
+  await publishStates();
+  if (discoveryError) {
+    throw discoveryError;
+  }
+}
+
+/**
  * Publish the discovery list to Gladys.
  * @returns {Promise<number>} How many devices were published.
  */
 async function publishDevices() {
   const devices = buildDiscoveredDevices(gladys, monitor.snapshot(), config);
-  // Zigbee2MQTT keeps talking while Gladys is unreachable; publishing then would
-  // only fill the logs with failures. The reconnection republishes everything.
-  if (!gladys.connected) {
-    logger.debug('Gladys is disconnected, skipping the discovery publish');
-    return devices.length;
-  }
   await gladys.publishDiscoveredDevices(devices);
+  discoveredCount = devices.length;
   logger.info(`Published ${devices.length} discovered device(s)`);
   return devices.length;
 }
@@ -247,9 +323,6 @@ async function publishDevices() {
  * events, then the widget nudge.
  */
 async function publishStates() {
-  if (!gladys.connected) {
-    return;
-  }
   const snapshot = monitor.snapshot();
   const published = await publisher.publish(buildAllStates(gladys, snapshot, config));
   if (published > 0) {
@@ -296,7 +369,11 @@ function refreshWidget(snapshot) {
  * @returns {import('./src/lastSeenStore.js').PersistedHistory} The history to persist.
  */
 function persistedHistory() {
-  return { devices: monitor.serialize(), verdicts: transitions.serialize() };
+  return {
+    devices: monitor.serialize(),
+    verdicts: transitions.serialize(),
+    heardAt: monitor.lastHeardAt(),
+  };
 }
 
 /**
@@ -315,7 +392,7 @@ function scheduleCreatedDevicePublish(device) {
       publisher.forgetDevice(externalId);
     }
     createdDevices.clear();
-    publishStates().catch((err) =>
+    requestPublish().catch((err) =>
       logger.error('Failed to publish the states of the new device(s)', err),
     );
   }, DEVICE_CREATED_DEBOUNCE_MS);
@@ -325,64 +402,47 @@ function scheduleCreatedDevicePublish(device) {
 function scheduleDiscoveryPublish() {
   clearTimeout(discoveryTimer);
   discoveryTimer = setTimeout(() => {
-    publishDevices()
-      .then(() => publishStates())
-      .catch((err) => logger.error('Failed to publish the discovered devices', err));
+    requestPublish({ discovery: true }).catch((err) =>
+      logger.error('Failed to publish the discovered devices', err),
+    );
   }, DISCOVERY_DEBOUNCE_MS);
 }
 
 /**
- * Report the application-level status shown in the Configuration screen —
- * distinct from the container state machine: this integration can be RUNNING and
- * still unable to reach the MQTT broker.
+ * Report the application-level status shown in the Configuration screen (the
+ * decision and its dedupe live in `src/connectionStatus.js`).
+ * @returns {Promise<boolean>} True when a new status was sent.
  */
-async function refreshConnectionStatus() {
-  const status = buildConnectionStatus();
-  // Republishing the same status on every tick would be pure noise — but a
-  // different REASON for the same failure is worth showing.
-  const signature = `${status.connected}:${status.message?.en ?? ''}`;
-  if (signature === lastConnectionStatus) {
-    return;
-  }
-  lastConnectionStatus = signature;
-  await gladys.setConnectionStatus(status.connected, status.message);
-}
-
-/**
- * Decide what to report as the application-level status.
- * @returns {{connected: boolean, message?: {en: string, fr: string}}} The status to publish.
- */
-function buildConnectionStatus() {
-  if (!mqtt?.connected) {
-    const reason = mqtt?.lastError ? ` (${mqtt.lastError.message})` : '';
-    return {
-      connected: false,
-      message: {
-        en: `Cannot reach the MQTT broker at ${config.mqtt_url}${reason}.`,
-        fr: `Broker MQTT injoignable sur ${config.mqtt_url}${reason}.`,
-      },
-    };
-  }
-  const waitedLongEnough = Date.now() - (mqttStartedAt ?? Date.now()) > INVENTORY_GRACE_MS;
-  if (!monitor.inventoryReceivedAt && waitedLongEnough) {
-    return {
-      connected: false,
-      message: {
-        en: `Connected, but nothing on ${config.base_topic}/bridge/devices. Check the Zigbee2MQTT base topic.`,
-        fr: `Connecté, mais rien sur ${config.base_topic}/bridge/devices. Vérifiez le topic de base de Zigbee2MQTT.`,
-      },
-    };
-  }
-  return { connected: true };
+function refreshConnectionStatus() {
+  return statusReporter.report(
+    buildConnectionStatus({ mqtt, monitor, config, mqttStartedAt, now: Date.now() }),
+  );
 }
 
 // --- Timers --------------------------------------------------------------------
 
-/** Start the watchdog tick and the periodic persistence. */
+/** Start the watchdog tick (it needs Gladys: it publishes). */
 function startTimers() {
   stopTimers();
   startTickTimer();
+}
 
+/**
+ * Replay the last-seen history and the last verdicts persisted by the previous
+ * run, then save them periodically for the life of the container.
+ *
+ * Both happen once, at boot, independently of the Gladys WebSocket: the MQTT
+ * session survives a Gladys outage and keeps recording signs of life, and
+ * those have to reach `/data` too — a restart in the middle of a long Gladys
+ * outage would otherwise lose everything heard since it began. Restoring
+ * BEFORE the first save is what keeps that first save from overwriting the
+ * file with an empty history.
+ * @returns {Promise<void>} Resolves once the history is restored.
+ */
+async function startPersistence() {
+  const history = await store.load();
+  monitor.restore(history.devices, { heardAt: history.heardAt });
+  transitions.restore(history.verdicts);
   persistTimer = setInterval(() => {
     store.save(persistedHistory()).catch(() => {});
   }, PERSIST_INTERVAL_MS);
@@ -392,20 +452,30 @@ function startTimers() {
 function startTickTimer() {
   clearInterval(tickTimer);
   tickTimer = setInterval(() => {
-    Promise.all([publishStates(), refreshConnectionStatus()]).catch((err) =>
-      logger.error('Watchdog tick failed', err),
-    );
+    tick().catch((err) => logger.error('Watchdog tick failed', err));
   }, config.check_interval_seconds * 1000);
 }
 
-/** Stop the timers (Gladys disconnected, or the container is shutting down). */
+/**
+ * One watchdog tick: finish an initialization that failed, publish, then
+ * report the status — after the pass, so a failure status set by a failed
+ * initialization is only replaced once publishing works again.
+ * @returns {Promise<void>} Resolves once the tick is done.
+ */
+async function tick() {
+  if (!configLoaded) {
+    await loadConfiguration();
+  }
+  await requestPublish();
+  await refreshConnectionStatus();
+}
+
+/** Stop the Gladys-bound timers (Gladys disconnected, or the container is shutting down). */
 function stopTimers() {
   clearInterval(tickTimer);
-  clearInterval(persistTimer);
   clearTimeout(discoveryTimer);
   clearTimeout(deviceCreatedTimer);
   tickTimer = null;
-  persistTimer = null;
   discoveryTimer = null;
   deviceCreatedTimer = null;
   // Whatever was pending is covered by the full republish of the reconnection.
@@ -419,13 +489,16 @@ function stopTimers() {
 gladys.handleShutdown(async (signal) => {
   logger.info(`Received ${signal} -> graceful shutdown`);
   stopTimers();
+  clearInterval(persistTimer);
   await store.save(persistedHistory()).catch(() => {});
   await mqtt?.stop().catch(() => {});
 });
 
 // --- Startup -------------------------------------------------------------------
 logger.info('Starting the Z2M Devices Monitor integration...');
-gladys.connect().catch((err) => {
-  logger.error('Initial connection failed', err);
-  process.exit(1);
-});
+startPersistence()
+  .then(() => gladys.connect())
+  .catch((err) => {
+    logger.error('Initial connection failed', err);
+    process.exit(1);
+  });

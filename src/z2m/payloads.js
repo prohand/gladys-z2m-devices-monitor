@@ -57,6 +57,25 @@ export function parseBridgeDevices(payload) {
 }
 
 /**
+ * Read the group names published (retained) on `<base_topic>/bridge/groups`.
+ *
+ * A group publishes its aggregated state under `<base_topic>/<group name>`,
+ * exactly where a device would: knowing the names is what keeps that traffic
+ * from being buffered as the activity of a device that never shows up.
+ * @param {unknown} payload - Parsed `bridge/groups` payload.
+ * @returns {string[] | undefined} The group friendly names, or undefined when unreadable.
+ */
+export function parseBridgeGroups(payload) {
+  if (!Array.isArray(payload)) {
+    return undefined;
+  }
+  return payload
+    .filter((group) => group && typeof group === 'object')
+    .map((group) => group.friendly_name)
+    .filter((name) => typeof name === 'string' && name.length > 0);
+}
+
+/**
  * Read the bridge online state (`<base_topic>/bridge/state`).
  * @param {unknown} payload - Parsed `bridge/state` payload.
  * @returns {boolean | undefined} True when online, undefined when unreadable.

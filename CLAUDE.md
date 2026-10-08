@@ -63,13 +63,33 @@ MQTT broker → mqttClient.js → messageRouter.js → DevicesMonitor (pure stat
 - **`src/devices/`** — pure snapshot→payload builders. Two device kinds: one Gladys device per
   Zigbee device, plus a singleton `Zigbee2MQTT monitor` summary device carrying network-wide
   counters (so one scene on `Silent devices > 0` covers devices paired later).
-- **`src/statePublisher.js`** — dedupe/throttle layer in front of the rate-limited host API.
+- **`src/statePublisher.js`** — dedupe/throttle/rate-budget layer in front of the rate-limited host
+  API.
+- **`src/singleFlight.js`** — at most one run of a task at a time; the publish pass goes through it.
 - **`src/lastSeenStore.js`** — `/data` persistence of the last-seen map and of the last verdicts.
 - **`src/transitions.js`** — `AliveTransitions`: remembers each device's last verdict and reports the
   flips, which `index.js` fires as scene triggers.
 - **`src/scenes.js`** — pure builders of the scene events and the scene action handlers
   (manifest `scene_triggers` / `scene_actions`).
 - **`src/widget.js`** — the dashboard widget content (manifest `widgets`), in the core vocabulary.
+- **`src/format.js`** — wording shared by the buttons (`actions.js`) and the widget, so neither
+  surface imports the other.
+- **`src/connectionStatus.js`** — what the Configuration screen status says
+  (`buildConnectionStatus`) and when it is re-sent (`ConnectionStatusReporter`: deduped, but a
+  failed delivery is never considered delivered).
+
+### Lifecycle (`index.js`)
+
+- **Every publication is one single-flight pass** (`src/singleFlight.js`): discovery when due, then
+  states, scene events, widget nudge. The tick, the reconnection, the debounces, the configuration
+  update and the buttons all go through `requestPublish()`; never call `publishDevices` /
+  `publishStates` directly — two interleaved passes send the same states twice and can fire the
+  same scene event twice. A failed discovery publish stays due and does not hold the states back.
+- **On `connected`, the watchdog is armed FIRST**, before reading the configuration and the full
+  republication: a transient 429/5xx there used to leave a reconnected integration with no tick at
+  all. The tick finishes whatever failed (configuration not loaded yet, discovery still due).
+- **`/data` persistence is not tied to the WebSocket**: restored and armed once at boot (see
+  **Sandbox**), saved again on SIGTERM through `handleShutdown`.
 
 ### Invariants that are easy to break
 
@@ -87,11 +107,33 @@ so topics are parsed against the longest _known_ friendly-name prefix, not split
 for a name that isn't resolvable yet (reports race the inventory on connect) is buffered in
 `pendingByFriendlyName` and replayed on the next inventory — and `serialize()` persists those pending
 entries too, otherwise a Zigbee2MQTT outage would quietly erase the history on the next write.
-`mergeActivity` only ever moves `lastSeen` forward.
+`mergeActivity` only ever moves `lastSeen` forward. The buffer is bounded, but **nothing in it
+expires before the first inventory** (that is the outage case above): after one, an entry
+unresolved for `PENDING_TTL_MS` (1 h, counted from its FIRST message) is dropped and no longer
+persisted, the map is capped at `MAX_PENDING`, and Zigbee2MQTT group names (`bridge/groups`) are
+never buffered — groups publish under the base topic like devices and never resolve.
+
+**Inventories.** An unreadable `bridge/devices` and a bare `[]` are ignored (Zigbee2MQTT always lists
+its coordinator, so `[]` is never a real inventory). A coordinator-only inventory IS honored, but
+`setZ2mDevices` keeps the activity map when the new inventory is empty: devices re-paired under the
+same IEEE address after a database reset find their history again.
 
 **Never-seen devices** are measured from `monitor.startedAt`, so a fresh install doesn't declare the
 whole network dead on its first tick. Losing the `/data` history has the mirror effect: a device that
 died last month looks healthy again for one full threshold.
+
+**Outages.** Silence only means something while the network can be heard (MQTT session up AND bridge
+not offline — `setListening` / `setBridgeOnline`). The monitor records each outage, and for the
+VERDICT only, a device that was still within its threshold when an outage began is measured from the
+END of that outage (`verdictReference`, `inGrace` in the snapshot): without it, an outage longer
+than the threshold declared every mains device silent on the first tick and "back" a minute later.
+A device already dead before the outage gets no grace (no false "back"); the displayed `Silence`
+gauge is never adjusted. The cost is accepted on purpose: a device that truly died DURING the
+outage is announced one threshold after the reconnection instead of one threshold after its last
+message, i.e. late by at most the outage's length — the same trade as the frozen verdicts below,
+one late event rather than a storm. The container being down is an outage too: `heard_at` in the `/data` file
+is when the previous run last heard the network, and a file without it is NOT guessed from the
+last-seen timestamps (that would revive a device already declared dead).
 
 **Gladys host API quirks** (each one cost a bug; the fake in `test/helpers/fakeGladys.js` reproduces
 them):
@@ -106,7 +148,13 @@ them):
   `no_silent_devices_text` guarantee in `normalizeConfig`.
 - 300 states/min per integration, 100 per request. `Alive` is the alert and is never throttled;
   `Silence` is a gauge that moves every minute and carries a `minIntervalMs`. Unchanged values are
-  still republished every `refreshMs` (30 min) so a device screen is never blank.
+  still republished every `refreshMs` (30 min, minus a random jitter of up to 20 % drawn per
+  feature on every publish, so the whole network never comes due on one tick) so a device screen is
+  never blank. Dedupe alone does not bound a FULL pass (reconnection, first start: 2 states per
+  device), so the publisher also keeps a sliding one-minute budget (`STATES_PER_MINUTE`, 250):
+  alerts go first, what does not fit is not recorded and goes out on the next pass. A 429 is waited
+  out (`retryAfter` when the error carries one — SDK 0.14 does not surface `Retry-After` — one
+  window otherwise, capped) and retried ONCE, then thrown with the states still due.
 - Gladys drops states for features the user hasn't created yet, while the publisher believes them
   delivered — hence `publisher.forgetDevice()` on `onDeviceCreated` / `onDeviceUpdated`.
 - A category/type pair the front does not know is accepted by the API and then drawn as an empty,
@@ -124,7 +172,8 @@ them):
   week's death nor misses one that happened while the container was down.
 - While the MQTT session is down or the bridge is offline the verdicts are **frozen**, not
   advanced: every device goes silent together then, and one event each would be a notification
-  storm about a single failure. A device still dead once the network is back is announced then.
+  storm about a single failure. A device still dead once the network is back is announced when its
+  post-outage grace runs out (one threshold after the reconnection, see **Outages**).
 - Events go out after the states, so a scene reading `Alive` sees the new value. A failed event is
   not retried. Never fire an event from a scene action handler (the scene would loop).
 - Scene/widget keys, field keys, variable and output keys are stored by the user's scenes and
@@ -137,7 +186,12 @@ them):
 
 **Sandbox.** The rootfs is read-only; `/data` (overridable via `GLADYS_DATA_DIR`) is the only
 writable path. Writes are atomic (tmp + rename) and best-effort: a failure degrades the integration
-to "forgets across restarts", it never takes it down.
+to "forgets across restarts", it never takes it down. Saves are queued one after the other and each
+uses a temporary name of its own (pid + counter + random): the periodic save and the shutdown one
+overlap, and a shared `.tmp` let one truncate what the other was renaming. The history is restored
+and the periodic save armed **once, at boot, before `gladys.connect()`** — never from the
+`connected` handler: MQTT keeps recording through a Gladys outage and that must reach `/data` too,
+and restoring before the first save is what keeps it from overwriting the file with nothing.
 
 ## Manifest and configuration
 
@@ -162,6 +216,12 @@ image. It's kept in sync with the code by `test/manifest.test.js`, which will fa
 health of a Zigbee/MQTT network rather than driving a domain of the house — and it bridges no
 protocol of its own, it only listens to one). The vocabulary is the store's, not ours — an unknown
 key is dropped by the indexer with a warning, so a typo silently costs a shelf.
+
+TLS: `mqtt_ca_certificate` is PEM text in a `string` field (the only free-text type a manifest
+offers, single-line: the browser strips the pasted line breaks, which `normalizePemCertificates`
+rebuilds), `mqtt_reject_unauthorized` a boolean defaulting to `true`; both go through
+`buildConnectOptions` and `sameBrokerConfig`. The broker URL may carry `user:pass@`: it is only ever
+logged or displayed through `redactBrokerUrl`.
 
 Every user-facing string in the code (action results, connection statuses) is likewise `{en, fr}`.
 User documentation lives in `docs/en.md` and `docs/fr.md` — both mandatory, re-hosted by Gladys, and

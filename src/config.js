@@ -9,6 +9,10 @@
 // This module provides the defaults, normalizes the received object so the rest
 // of the code never deals with `undefined`, and parses the two free-text fields
 // (per-device timeouts, ignore list) into the structures the monitor uses.
+//
+// It also owns `redactBrokerUrl`: the broker URL is the one setting a user may
+// write credentials into (`mqtt://user:pass@host`), and it is quoted in the
+// logs, the connection status and the button answers.
 // -----------------------------------------------------------------------------
 
 // Defaults: they MUST stay consistent with the `default` values declared in the
@@ -19,6 +23,15 @@ export const DEFAULT_CONFIG = {
   mqtt_username: '',
   mqtt_password: '',
   base_topic: 'zigbee2mqtt',
+
+  // --- TLS (mqtts:// and wss:// only) ----------------------------------------
+  // A home broker with TLS almost always runs on a self-signed certificate or a
+  // private CA, which Node rejects by default: without these two fields such a
+  // broker was simply unreachable. The certificate is the safe answer; turning
+  // the verification off is the blunt one, offered because it is what users do
+  // with every other client.
+  mqtt_ca_certificate: '', // PEM, one or more certificates
+  mqtt_reject_unauthorized: true,
 
   // --- Silence thresholds ---------------------------------------------------
   // A device is considered dead once it has been silent for longer than its
@@ -89,6 +102,47 @@ export function normalizeBrokerUrl(raw) {
 }
 
 /**
+ * Hide the credentials a broker URL may carry (`mqtt://user:pass@host`) before
+ * it is logged or displayed. The username goes too: it is half of the pair.
+ * @param {unknown} url - A broker URL.
+ * @returns {string} The URL with its userinfo replaced by `***`.
+ */
+export function redactBrokerUrl(url) {
+  return String(url ?? '').replace(/^([a-z][a-z0-9+.-]*:\/\/)[^/?#]*@/i, '$1***@');
+}
+
+/**
+ * Normalize the PEM text of the CA certificate field.
+ *
+ * The field is a single-line text input, and browsers strip the line breaks of
+ * what is pasted into one: the certificate arrives as
+ * `-----BEGIN CERTIFICATE-----MIID…-----END CERTIFICATE-----`, which Node's TLS
+ * parser refuses. Each block is rebuilt with its base64 body re-wrapped at 64
+ * columns — line breaks, spaces or literal `\n` in between, whatever survived.
+ * @param {unknown} raw - Raw value of the `mqtt_ca_certificate` field.
+ * @returns {string} The PEM text Node expects, or `''` when the field is empty.
+ */
+export function normalizePemCertificates(raw) {
+  const text = String(raw ?? '')
+    .replace(/\\n/g, '\n')
+    .trim();
+  if (!text) {
+    return '';
+  }
+  const blocks = [...text.matchAll(/-----BEGIN ([A-Z0-9 ]+)-----([\s\S]*?)-----END \1-----/g)];
+  if (blocks.length === 0) {
+    return text; // not PEM: left as typed, the TLS error will say why
+  }
+  return blocks
+    .map(([, label, body]) => {
+      const lines = body.replace(/\s+/g, '').match(/.{1,64}/g) ?? [];
+      return [`-----BEGIN ${label}-----`, ...lines, `-----END ${label}-----`].join('\n');
+    })
+    .join('\n')
+    .concat('\n');
+}
+
+/**
  * Merge the user configuration with the defaults.
  * @param {Record<string, unknown>} raw - Configuration returned by the SDK.
  * @returns {Record<string, unknown>} A complete, correctly typed configuration.
@@ -105,6 +159,10 @@ export function normalizeConfig(raw = {}) {
     base_topic: String(raw.base_topic ?? DEFAULT_CONFIG.base_topic)
       .trim()
       .replace(/\/+$/, ''),
+    mqtt_ca_certificate: normalizePemCertificates(raw.mqtt_ca_certificate),
+    // Verification stays on unless explicitly turned off.
+    mqtt_reject_unauthorized:
+      raw.mqtt_reject_unauthorized !== false && raw.mqtt_reject_unauthorized !== 'false',
     default_timeout_minutes: toPositiveNumber(
       raw.default_timeout_minutes,
       DEFAULT_CONFIG.default_timeout_minutes,

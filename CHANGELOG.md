@@ -6,6 +6,25 @@ All notable changes to this integration are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- TLS settings for `mqtts://` / `wss://` brokers: a CA certificate (PEM, pasting it on one line works) and a switch to turn the certificate verification off.
+
+### Changed
+
+- After an outage (broker unreachable, bridge offline, integration stopped) longer than a threshold, a device that was alive when it began gets one threshold from the end of the outage to speak again, instead of being announced silent then back.
+- State publishing keeps under the host API budget (250 states per sliding minute, alerts first), retries once after a 429, and spreads the 30-minute refresh of unchanged values.
+- Zigbee2MQTT groups are no longer buffered as unknown devices; activity of names never resolved expires after an hour.
+- The base image is pinned by digest and `/data` is owned by the `node` user in the image.
+
+### Fixed
+
+- A transient host API failure right after a Gladys reconnection no longer leaves the integration without its watchdog.
+- Publications triggered at the same time (tick, reconnection, buttons) no longer interleave.
+- The history is saved to `/data` during a Gladys outage too, and two overlapping saves no longer share a temporary file.
+- A bare empty `bridge/devices` payload no longer wipes the device list and its history.
+- Credentials written into the broker URL are masked in the logs, the status and the button answers.
+
 ## [2.2.0] - 2026-10-07
 
 - Maintenance release, no functional change.

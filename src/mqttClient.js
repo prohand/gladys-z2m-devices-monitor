@@ -7,11 +7,27 @@
 // through to the message handler (it changes how a report is interpreted, see
 // `parseLastSeen`), and the last error kept around so the Configuration screen
 // can show WHY the connection fails.
+//
+// The subscription is issued on every `connect`, and that does NOT double it:
+// with `resubscribe: true`, `mqtt.js` re-sends the topics it remembers on a
+// reconnection itself, and skips a `subscribe()` for a topic it already holds
+// at the same QoS (the callback then fires with no packet sent). The explicit
+// call is what subscribes the FIRST time and what reports the outcome; the
+// broker sees exactly one SUBSCRIBE per session — `test/mqttClient.test.js`
+// counts them.
+//
+// TLS: `mqtts://` and `wss://` brokers at home run on self-signed certificates
+// or a private CA. The CA certificate and the verification switch of the
+// configuration go straight into the `tls` options (`buildConnectOptions`).
+//
+// The URL is only ever logged through `redactBrokerUrl`: users do write
+// `mqtt://user:pass@host`.
 // -----------------------------------------------------------------------------
 
 import { randomUUID } from 'node:crypto';
 import mqtt from 'mqtt';
 import { createLogger } from '@gladysassistant/integration-sdk';
+import { redactBrokerUrl } from './config.js';
 
 const logger = createLogger({ name: 'mqtt' });
 
@@ -24,9 +40,16 @@ export class MqttConnection {
    * @param {Record<string, unknown>} options.config - Normalized configuration.
    * @param {(topic: string, payload: Buffer, meta: {retained: boolean}) => void} options.onMessage - Message handler.
    * @param {(connected: boolean, error?: Error) => void} [options.onStatusChange] - Called on every connection state change.
+   * @param {number} [options.reconnectPeriodMs] - Delay between two reconnection attempts.
    */
-  constructor({ config, onMessage, onStatusChange = () => {} }) {
+  constructor({
+    config,
+    onMessage,
+    onStatusChange = () => {},
+    reconnectPeriodMs = RECONNECT_PERIOD_MS,
+  }) {
     this.config = config;
+    this.reconnectPeriodMs = reconnectPeriodMs;
     this.onMessage = onMessage;
     this.onStatusChange = onStatusChange;
     this.client = null;
@@ -45,20 +68,13 @@ export class MqttConnection {
     if (this.client) {
       return;
     }
-    const { mqtt_url: url, mqtt_username: username, mqtt_password: password } = this.config;
-    logger.info(`Connecting to ${url} (topic ${this.topicFilter})`);
+    const url = this.config.mqtt_url;
+    logger.info(`Connecting to ${redactBrokerUrl(url)} (topic ${this.topicFilter})`);
 
-    this.client = mqtt.connect(url, {
-      // A unique client id per run: two clients sharing an id kick each other
-      // out of the broker in a loop, and this one only ever reads.
-      clientId: `gladys-z2m-monitor-${randomUUID().slice(0, 8)}`,
-      username: username || undefined,
-      password: password || undefined,
-      clean: true,
-      reconnectPeriod: RECONNECT_PERIOD_MS,
-      connectTimeout: CONNECT_TIMEOUT_MS,
-      resubscribe: true,
-    });
+    this.client = mqtt.connect(
+      url,
+      buildConnectOptions(this.config, { reconnectPeriodMs: this.reconnectPeriodMs }),
+    );
 
     this.client.on('connect', () => {
       this.connected = true;
@@ -131,9 +147,36 @@ export class MqttConnection {
 }
 
 /**
+ * The `mqtt.connect` options for a configuration.
+ * @param {Record<string, unknown>} config - Normalized configuration.
+ * @param {object} [options] - Options.
+ * @param {number} [options.reconnectPeriodMs] - Delay between two reconnection attempts.
+ * @returns {Record<string, unknown>} Options for `mqtt.connect`.
+ */
+export function buildConnectOptions(config, { reconnectPeriodMs = RECONNECT_PERIOD_MS } = {}) {
+  const options = {
+    // A unique client id per run: two clients sharing an id kick each other
+    // out of the broker in a loop, and this one only ever reads.
+    clientId: `gladys-z2m-monitor-${randomUUID().slice(0, 8)}`,
+    username: config.mqtt_username || undefined,
+    password: config.mqtt_password || undefined,
+    clean: true,
+    reconnectPeriod: reconnectPeriodMs,
+    connectTimeout: CONNECT_TIMEOUT_MS,
+    resubscribe: true,
+    // Only read by the TLS transports (mqtts, wss): harmless on plain TCP.
+    rejectUnauthorized: config.mqtt_reject_unauthorized !== false,
+  };
+  if (config.mqtt_ca_certificate) {
+    options.ca = [config.mqtt_ca_certificate];
+  }
+  return options;
+}
+
+/**
  * Do two configurations describe the same broker connection? A change of
- * threshold must not drop the MQTT session; a change of URL, credentials or base
- * topic must.
+ * threshold must not drop the MQTT session; a change of URL, credentials, TLS
+ * settings or base topic must.
  * @param {Record<string, unknown>} a - First configuration.
  * @param {Record<string, unknown>} b - Second configuration.
  * @returns {boolean} True when the connection can be kept as is.
@@ -143,6 +186,8 @@ export function sameBrokerConfig(a, b) {
     a.mqtt_url === b.mqtt_url &&
     a.mqtt_username === b.mqtt_username &&
     a.mqtt_password === b.mqtt_password &&
-    a.base_topic === b.base_topic
+    a.base_topic === b.base_topic &&
+    a.mqtt_ca_certificate === b.mqtt_ca_certificate &&
+    a.mqtt_reject_unauthorized === b.mqtt_reject_unauthorized
   );
 }

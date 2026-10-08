@@ -177,10 +177,51 @@ test('an unreadable inventory is ignored, not treated as an empty network', () =
   assert.ok(monitor.serialize()[PLUG_IEEE], 'and so did the history');
 });
 
-test('a genuinely empty inventory IS honored', () => {
+// Zigbee2MQTT always lists its coordinator: a bare `[]` was never published by
+// it, and honoring it would drop every device and its history at once.
+test('a bare empty inventory is ignored', () => {
   const { monitor, send } = createRig();
   send(`${BASE}/bridge/devices`, BRIDGE_DEVICES_PAYLOAD);
+  send(`${BASE}/office plug`, { state: 'ON' });
+
   const result = send(`${BASE}/bridge/devices`, []);
+  assert.equal(result.inventoryUpdated, false);
+  assert.equal(monitor.snapshot().summary.monitored, 2, 'the inventory survived');
+  assert.ok(monitor.serialize()[PLUG_IEEE], 'and so did the history');
+});
+
+// A Zigbee2MQTT restarted on a reset database announces its coordinator alone:
+// the network IS empty now, but the devices re-paired under the same address
+// must find their history again.
+test('a coordinator-only inventory is honored, and the history kept', () => {
+  const { monitor, send } = createRig();
+  send(`${BASE}/bridge/devices`, BRIDGE_DEVICES_PAYLOAD);
+  send(`${BASE}/office plug`, { state: 'ON' });
+
+  const coordinatorOnly = BRIDGE_DEVICES_PAYLOAD.filter((entry) => entry.type === 'Coordinator');
+  const result = send(`${BASE}/bridge/devices`, coordinatorOnly);
   assert.equal(result.inventoryUpdated, true);
   assert.equal(monitor.snapshot().summary.monitored, 0);
+
+  send(`${BASE}/bridge/devices`, BRIDGE_DEVICES_PAYLOAD);
+  assert.equal(device(monitor, PLUG_IEEE).neverSeen, false, 'the re-paired plug kept its history');
+});
+
+// A group publishes its state under the base topic exactly like a device; it is
+// never resolved, so without the group list it would sit in the pending buffer
+// — and in /data — for ever.
+test('the traffic of a Zigbee2MQTT group is never buffered as a device', () => {
+  const { monitor, send } = createRig();
+  send(`${BASE}/bridge/devices`, BRIDGE_DEVICES_PAYLOAD);
+  send(`${BASE}/living room lights`, { state: 'ON' });
+  assert.ok(monitor.serialize()['living room lights'], 'buffered while unknown');
+
+  const result = send(`${BASE}/bridge/groups`, [
+    { id: 1, friendly_name: 'living room lights', members: [] },
+  ]);
+  assert.equal(result.kind, TOPIC_KINDS.BRIDGE_GROUPS);
+  assert.equal(monitor.serialize()['living room lights'], undefined, 'dropped once known');
+
+  send(`${BASE}/living room lights`, { state: 'OFF' });
+  assert.equal(monitor.serialize()['living room lights'], undefined, 'and never buffered again');
 });

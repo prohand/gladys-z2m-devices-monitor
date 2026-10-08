@@ -5,6 +5,7 @@
 // receives, because not every message under that tree proves a device is alive:
 //
 //   zigbee2mqtt/bridge/devices          -> the device inventory (retained)
+//   zigbee2mqtt/bridge/groups           -> the groups: they publish, but are no devices
 //   zigbee2mqtt/bridge/state            -> the bridge itself is online/offline
 //   zigbee2mqtt/bridge/event            -> device_announce, device_leave...
 //   zigbee2mqtt/<friendly name>         -> a report FROM the device  ✔ life
@@ -24,6 +25,7 @@
 
 export const TOPIC_KINDS = {
   BRIDGE_DEVICES: 'bridge-devices',
+  BRIDGE_GROUPS: 'bridge-groups',
   BRIDGE_STATE: 'bridge-state',
   BRIDGE_EVENT: 'bridge-event',
   BRIDGE_OTHER: 'bridge-other',
@@ -53,6 +55,9 @@ export function parseTopic(topic, baseTopic, knownFriendlyNames = new Set()) {
 
   if (rest === 'bridge/devices') {
     return { kind: TOPIC_KINDS.BRIDGE_DEVICES };
+  }
+  if (rest === 'bridge/groups') {
+    return { kind: TOPIC_KINDS.BRIDGE_GROUPS };
   }
   if (rest === 'bridge/state') {
     return { kind: TOPIC_KINDS.BRIDGE_STATE };

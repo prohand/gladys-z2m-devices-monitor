@@ -4,8 +4,10 @@ import {
   DEFAULT_CONFIG,
   normalizeBrokerUrl,
   normalizeConfig,
+  normalizePemCertificates,
   parseCustomTimeouts,
   parseDeviceList,
+  redactBrokerUrl,
 } from '../src/config.js';
 
 test('normalizeConfig returns the defaults when called with no argument', () => {
@@ -125,4 +127,75 @@ test('parseDeviceList and parseCustomTimeouts tolerate an empty field', () => {
   assert.equal(parseDeviceList(undefined).size, 0);
   assert.equal(parseCustomTimeouts('').size, 0);
   assert.equal(parseCustomTimeouts(undefined).size, 0);
+});
+
+// --- Credentials in the URL -------------------------------------------------------
+
+test('redactBrokerUrl hides the credentials a URL carries, and only them', () => {
+  assert.equal(
+    redactBrokerUrl('mqtt://user:secret@192.168.1.10:1883'),
+    'mqtt://***@192.168.1.10:1883',
+  );
+  assert.equal(redactBrokerUrl('mqtts://gladys@broker/path'), 'mqtts://***@broker/path');
+  assert.equal(redactBrokerUrl('mqtt://user:p@ss@host:1883'), 'mqtt://***@host:1883');
+  assert.equal(redactBrokerUrl('mqtt://192.168.1.10:1883'), 'mqtt://192.168.1.10:1883');
+  assert.equal(redactBrokerUrl('ws://host:9001/mqtt?x=a@b'), 'ws://host:9001/mqtt?x=a@b');
+  assert.equal(redactBrokerUrl(undefined), '');
+});
+
+// --- TLS ---------------------------------------------------------------------------
+
+const BODY = 'A'.repeat(64) + 'B'.repeat(64) + 'C'.repeat(10);
+const PEM = `-----BEGIN CERTIFICATE-----\n${'A'.repeat(64)}\n${'B'.repeat(64)}\n${'C'.repeat(10)}\n-----END CERTIFICATE-----\n`;
+
+test('TLS verification is on, with no CA, unless configured otherwise', () => {
+  const config = normalizeConfig();
+  assert.equal(config.mqtt_ca_certificate, '');
+  assert.equal(config.mqtt_reject_unauthorized, true);
+  assert.equal(
+    normalizeConfig({ mqtt_reject_unauthorized: false }).mqtt_reject_unauthorized,
+    false,
+  );
+  assert.equal(
+    normalizeConfig({ mqtt_reject_unauthorized: 'false' }).mqtt_reject_unauthorized,
+    false,
+  );
+  assert.equal(normalizeConfig({ mqtt_reject_unauthorized: null }).mqtt_reject_unauthorized, true);
+});
+
+test('a well-formed PEM certificate goes through untouched', () => {
+  assert.equal(normalizePemCertificates(PEM), PEM);
+});
+
+// A single-line text input strips the line breaks of what is pasted into it.
+test('a certificate pasted on one line is rebuilt into valid PEM', () => {
+  assert.equal(
+    normalizePemCertificates(`-----BEGIN CERTIFICATE-----${BODY}-----END CERTIFICATE-----`),
+    PEM,
+  );
+  assert.equal(
+    normalizePemCertificates(
+      `  -----BEGIN CERTIFICATE----- ${BODY.slice(0, 70)} ${BODY.slice(70)} -----END CERTIFICATE-----  `,
+    ),
+    PEM,
+    'spaces where the line breaks were',
+  );
+  assert.equal(
+    normalizePemCertificates(PEM.replaceAll('\n', '\\n')),
+    PEM,
+    'escaped line breaks copied out of a JSON file',
+  );
+});
+
+test('a chain of certificates keeps every block', () => {
+  const chain = normalizePemCertificates(
+    `-----BEGIN CERTIFICATE-----${BODY}-----END CERTIFICATE----------BEGIN CERTIFICATE-----${BODY}-----END CERTIFICATE-----`,
+  );
+  assert.equal(chain, `${PEM.trimEnd()}\n${PEM}`);
+});
+
+test('an empty or non-PEM certificate field is kept as typed', () => {
+  assert.equal(normalizePemCertificates(''), '');
+  assert.equal(normalizePemCertificates(undefined), '');
+  assert.equal(normalizePemCertificates('  not a certificate '), 'not a certificate');
 });
