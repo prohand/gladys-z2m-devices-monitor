@@ -63,7 +63,9 @@ MQTT broker → mqttClient.js → messageRouter.js → DevicesMonitor (pure stat
 - **`src/devices/`** — pure snapshot→payload builders. Two device kinds: one Gladys device per
   Zigbee device, plus a singleton `Zigbee2MQTT monitor` summary device carrying network-wide
   counters (so one scene on `Silent devices > 0` covers devices paired later).
-- **`src/statePublisher.js`** — dedupe/throttle layer in front of the rate-limited host API.
+- **`src/statePublisher.js`** — dedupe/throttle/rate-budget layer in front of the rate-limited host
+  API.
+- **`src/singleFlight.js`** — at most one run of a task at a time; the publish pass goes through it.
 - **`src/lastSeenStore.js`** — `/data` persistence of the last-seen map and of the last verdicts.
 - **`src/transitions.js`** — `AliveTransitions`: remembers each device's last verdict and reports the
   flips, which `index.js` fires as scene triggers.

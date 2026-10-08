@@ -9,8 +9,9 @@ and the [`@gladysassistant/integration-sdk`](https://github.com/GladysAssistant/
 
 > User documentation: [English](docs/en.md) · [Français](docs/fr.md)
 >
-> Requires **Gladys ≥ 4.86.0**: the manifest declares its catalog category
-> (`network`), a field older cores reject outright.
+> Requires **Gladys ≥ 5.1.0**: the manifest declares a dashboard widget and scene
+> blocks (and its catalog category, `network`), fields older cores reject
+> outright.
 
 ## Why
 
@@ -52,8 +53,9 @@ exact lie this integration exists to prevent.
 One Gladys device per Zigbee device (keyed on the IEEE address, so renaming in
 Zigbee2MQTT keeps the history), carrying:
 
-- **Alive** — binary, `presence-sensor`, history kept. The feature to build the
-  alert on.
+- **Alive** — `input` + `binary`, history kept. The feature to build the alert
+  on. (Not `presence-sensor`: up to Gladys 4.85.0 the front draws a
+  `presence-sensor` + `binary` feature as an empty tag.)
 - **Silence** — how many minutes the device has been quiet, to size the
   thresholds.
 
@@ -92,6 +94,7 @@ The user documentation lists both names side by side.
 │  ├─ messageRouter.js               # what counts as a sign of life
 │  ├─ mqttClient.js                  # the broker connection
 │  ├─ statePublisher.js              # deduplicated, rate-aware state publishing
+│  ├─ singleFlight.js                # one publish pass at a time
 │  ├─ lastSeenStore.js               # /data persistence, so a restart forgets nothing
 │  ├─ transitions.js                 # alive/silent flips, the source of the scene triggers
 │  ├─ scenes.js                      # scene trigger events + scene action handlers
@@ -118,11 +121,18 @@ The user documentation lists both names side by side.
 **Rate limiting.** The host API accepts 300 states per minute per integration,
 sized for state _changes_. `Silence` is a gauge that moves on its own every
 minute, so [`src/statePublisher.js`](src/statePublisher.js) deduplicates and
-throttles it, while `Alive` — the alert — is never held back.
+throttles it, while `Alive` — the alert — is never held back. A full pass (after
+a reconnection) is still capped to 250 states per sliding minute, alerts first,
+a 429 is waited out and retried once, and the 30-minute refresh of unchanged
+values is jittered per feature. Every publication goes through one single-flight
+pass ([`src/singleFlight.js`](src/singleFlight.js)), so the tick, a reconnection
+and a button never interleave.
 
 **Persistence.** The last-seen map is written to `/data`, the single writable
 volume of the sandbox. Without it, a container restart would hand a device that
-died last month a brand new threshold and the alert would never fire.
+died last month a brand new threshold and the alert would never fire. It is
+saved every 5 minutes whether Gladys is reachable or not (MQTT keeps recording
+through a Gladys outage), and on shutdown.
 
 **Never-seen devices** are measured from the moment the monitor started, so a
 fresh install does not declare the whole network dead on its first tick.
