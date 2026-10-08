@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 // One of the tests below deliberately makes a write fail, and the store reports
 // it — rightly — as an error. Pin the level BEFORE the module builds its logger
@@ -73,4 +73,41 @@ test('an unwritable path fails softly', async () => {
   await writeFile(filePath, 'blocker', 'utf8');
   const store = new LastSeenStore({ filePath: join(filePath, 'last-seen.json') });
   assert.equal(await store.save({ devices: { a: { last_seen: 1 } } }), false);
+});
+
+// The periodic save and the shutdown one can overlap. Sharing one `.tmp` path,
+// the second write truncated the file the first was about to rename.
+test('overlapping saves never collide, and the last one asked wins', async () => {
+  const { store, filePath } = await createStore();
+  const saves = Array.from({ length: 20 }, (_, index) =>
+    store.save({ devices: { a: { last_seen: index } }, verdicts: {} }),
+  );
+  assert.deepEqual(await Promise.all(saves), Array(20).fill(true));
+  const written = JSON.parse(await readFile(filePath, 'utf8'));
+  assert.deepEqual(written.devices, { a: { last_seen: 19 } });
+  const leftovers = (await readdir(dirname(filePath))).filter((name) => name.endsWith('.tmp'));
+  assert.deepEqual(leftovers, [], 'no temporary file is left behind');
+});
+
+test('two stores on the same file write through distinct temporary files', async () => {
+  const { filePath } = await createStore();
+  const first = new LastSeenStore({ filePath });
+  const second = new LastSeenStore({ filePath });
+  const results = await Promise.all([
+    first.save({ devices: { a: { last_seen: 1 } } }),
+    second.save({ devices: { b: { last_seen: 2 } } }),
+  ]);
+  assert.deepEqual(results, [true, true]);
+  const written = JSON.parse(await readFile(filePath, 'utf8'));
+  assert.ok(written.devices.a || written.devices.b, 'one complete history is on disk');
+});
+
+test('a failed save does not block the ones queued after it', async () => {
+  const { filePath } = await createStore();
+  await writeFile(filePath, 'blocker', 'utf8');
+  const store = new LastSeenStore({ filePath: join(filePath, 'last-seen.json') });
+  const failed = store.save({ devices: {} });
+  const next = store.save({ devices: {} });
+  assert.equal(await failed, false);
+  assert.equal(await next, false, 'resolved, not stuck behind the failure');
 });

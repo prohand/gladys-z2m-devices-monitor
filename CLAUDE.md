@@ -142,7 +142,12 @@ them):
 
 **Sandbox.** The rootfs is read-only; `/data` (overridable via `GLADYS_DATA_DIR`) is the only
 writable path. Writes are atomic (tmp + rename) and best-effort: a failure degrades the integration
-to "forgets across restarts", it never takes it down.
+to "forgets across restarts", it never takes it down. Saves are queued one after the other and each
+uses a temporary name of its own (pid + counter + random): the periodic save and the shutdown one
+overlap, and a shared `.tmp` let one truncate what the other was renaming. The history is restored
+and the periodic save armed **once, at boot, before `gladys.connect()`** — never from the
+`connected` handler: MQTT keeps recording through a Gladys outage and that must reach `/data` too,
+and restoring before the first save is what keeps it from overwriting the file with nothing.
 
 ## Manifest and configuration
 

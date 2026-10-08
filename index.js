@@ -63,7 +63,6 @@ let persistTimer = null;
 /** @type {Set<string>} External ids of the devices the user just created. */
 const createdDevices = new Set();
 let mqttStartedAt = null;
-let historyRestored = false;
 let widgetSignature = null;
 
 // --- Discovery: Gladys asks for the list of devices --------------------------
@@ -148,25 +147,15 @@ gladys.on('connected', async () => {
     config = normalizeConfig(await gladys.getConfig());
     monitor.setConfig(config);
 
-    // 2) Replay the last-seen history and the last verdicts persisted by the
-    //    previous run — once: a Gladys reconnection must not rewind what we
-    //    learned since.
-    if (!historyRestored) {
-      const history = await store.load();
-      monitor.restore(history.devices);
-      transitions.restore(history.verdicts);
-      historyRestored = true;
-    }
-
-    // 3) (Re)connect to the MQTT broker Zigbee2MQTT publishes on.
+    // 2) (Re)connect to the MQTT broker Zigbee2MQTT publishes on.
     startMqtt();
 
-    // 4) Gladys resynchronized on its side: push the full picture again.
+    // 3) Gladys resynchronized on its side: push the full picture again.
     publisher.reset();
     await publishDevices();
     await publishStates();
 
-    // 5) Run the watchdog.
+    // 4) Run the watchdog.
     startTimers();
   } catch (err) {
     logger.error('Post-connection initialization failed', err);
@@ -175,9 +164,10 @@ gladys.on('connected', async () => {
 });
 
 gladys.on('disconnected', () => {
-  // Keep the MQTT session and the last-seen history: Gladys being unreachable
-  // says nothing about the Zigbee network, and dropping the history here would
-  // hand every device a fresh threshold on reconnection.
+  // Keep the MQTT session, the last-seen history AND its persistence: Gladys
+  // being unreachable says nothing about the Zigbee network, which keeps
+  // talking — dropping or no longer saving what it says would hand every device
+  // a fresh threshold after a restart.
   stopTimers();
 });
 
@@ -341,11 +331,28 @@ function refreshConnectionStatus() {
 
 // --- Timers --------------------------------------------------------------------
 
-/** Start the watchdog tick and the periodic persistence. */
+/** Start the watchdog tick (it needs Gladys: it publishes). */
 function startTimers() {
   stopTimers();
   startTickTimer();
+}
 
+/**
+ * Replay the last-seen history and the last verdicts persisted by the previous
+ * run, then save them periodically for the life of the container.
+ *
+ * Both happen once, at boot, independently of the Gladys WebSocket: the MQTT
+ * session survives a Gladys outage and keeps recording signs of life, and
+ * those have to reach `/data` too — a restart in the middle of a long Gladys
+ * outage would otherwise lose everything heard since it began. Restoring
+ * BEFORE the first save is what keeps that first save from overwriting the
+ * file with an empty history.
+ * @returns {Promise<void>} Resolves once the history is restored.
+ */
+async function startPersistence() {
+  const history = await store.load();
+  monitor.restore(history.devices);
+  transitions.restore(history.verdicts);
   persistTimer = setInterval(() => {
     store.save(persistedHistory()).catch(() => {});
   }, PERSIST_INTERVAL_MS);
@@ -361,14 +368,12 @@ function startTickTimer() {
   }, config.check_interval_seconds * 1000);
 }
 
-/** Stop the timers (Gladys disconnected, or the container is shutting down). */
+/** Stop the Gladys-bound timers (Gladys disconnected, or the container is shutting down). */
 function stopTimers() {
   clearInterval(tickTimer);
-  clearInterval(persistTimer);
   clearTimeout(discoveryTimer);
   clearTimeout(deviceCreatedTimer);
   tickTimer = null;
-  persistTimer = null;
   discoveryTimer = null;
   deviceCreatedTimer = null;
   // Whatever was pending is covered by the full republish of the reconnection.
@@ -382,13 +387,16 @@ function stopTimers() {
 gladys.handleShutdown(async (signal) => {
   logger.info(`Received ${signal} -> graceful shutdown`);
   stopTimers();
+  clearInterval(persistTimer);
   await store.save(persistedHistory()).catch(() => {});
   await mqtt?.stop().catch(() => {});
 });
 
 // --- Startup -------------------------------------------------------------------
 logger.info('Starting the Z2M Devices Monitor integration...');
-gladys.connect().catch((err) => {
-  logger.error('Initial connection failed', err);
-  process.exit(1);
-});
+startPersistence()
+  .then(() => gladys.connect())
+  .catch((err) => {
+    logger.error('Initial connection failed', err);
+    process.exit(1);
+  });
