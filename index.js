@@ -158,7 +158,11 @@ gladys.on('connected', async () => {
   try {
     await loadConfiguration();
     await requestPublish();
-    await refreshConnectionStatus();
+    // A session opened just now reports itself once subscribed; reporting it
+    // here would flash "cannot reach the broker" while it is still dialing.
+    if (mqtt?.connected) {
+      await refreshConnectionStatus();
+    }
   } catch (err) {
     logger.error('Post-connection initialization failed, retrying on the next tick', err);
     await statusReporter.report(INITIALIZATION_FAILED_STATUS).catch(() => {});
