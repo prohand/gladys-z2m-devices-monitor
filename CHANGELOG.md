@@ -6,6 +6,8 @@ All notable changes to this integration are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-10-08
+
 ### Added
 
 - TLS settings for `mqtts://` / `wss://` brokers: a CA certificate (PEM, pasting it on one line works) and a switch to turn the certificate verification off.
@@ -99,7 +101,8 @@ First public release.
 - Give a device its value the moment the user creates it
 - Say what the monitor really shows, and stop duplicating the LQI
 
-[Unreleased]: https://github.com/prohand/gladys-z2m-devices-monitor/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/prohand/gladys-z2m-devices-monitor/compare/v2.2.1...HEAD
+[2.2.1]: https://github.com/prohand/gladys-z2m-devices-monitor/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/prohand/gladys-z2m-devices-monitor/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/prohand/gladys-z2m-devices-monitor/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/prohand/gladys-z2m-devices-monitor/compare/v1.0.5...v2.0.0
