@@ -212,6 +212,12 @@ health of a Zigbee/MQTT network rather than driving a domain of the house — an
 protocol of its own, it only listens to one). The vocabulary is the store's, not ours — an unknown
 key is dropped by the indexer with a warning, so a typo silently costs a shelf.
 
+TLS: `mqtt_ca_certificate` is PEM text in a `string` field (the only free-text type a manifest
+offers, single-line: the browser strips the pasted line breaks, which `normalizePemCertificates`
+rebuilds), `mqtt_reject_unauthorized` a boolean defaulting to `true`; both go through
+`buildConnectOptions` and `sameBrokerConfig`. The broker URL may carry `user:pass@`: it is only ever
+logged or displayed through `redactBrokerUrl`.
+
 Every user-facing string in the code (action results, connection statuses) is likewise `{en, fr}`.
 User documentation lives in `docs/en.md` and `docs/fr.md` — both mandatory, re-hosted by Gladys, and
 kept in sync with each other.

@@ -284,6 +284,16 @@ test('section descriptions stay under the 1000 character limit', () => {
   }
 });
 
+// The CA certificate is multi-line PEM text, but the only free-text type a
+// manifest offers is a single-line `string`: `normalizePemCertificates` is what
+// makes the pasted value usable. The verification switch defaults to ON.
+test('the TLS fields have the types the code expects', () => {
+  const field = (key) => manifest.config_schema.find((entry) => entry.key === key);
+  assert.equal(field('mqtt_ca_certificate').type, 'string');
+  assert.equal(field('mqtt_reject_unauthorized').type, 'boolean');
+  assert.equal(field('mqtt_reject_unauthorized').default, true);
+});
+
 test('the integration declares itself local only: it never talks to a cloud', () => {
   assert.deepEqual(manifest.transports, ['local']);
 });

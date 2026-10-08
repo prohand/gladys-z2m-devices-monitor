@@ -49,11 +49,13 @@ required.
 
 ### 2. Configuration
 
-| Field                   | What to fill in                                                                                                                                                                                                     |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Broker URL**          | The address of your MQTT broker, e.g. `mqtt://192.168.1.10:1883`. The `mqtts://`, `ws://` and `wss://` schemes are supported too. Typing the address alone (`192.168.1.10:1884`) works: `mqtt://` is added for you. |
-| **Username / Password** | Leave empty if your broker allows anonymous connections.                                                                                                                                                            |
-| **Base topic**          | The `mqtt.base_topic` configured in Zigbee2MQTT. `zigbee2mqtt` in almost every case.                                                                                                                                |
+| Field                             | What to fill in                                                                                                                                                                                                     |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Broker URL**                    | The address of your MQTT broker, e.g. `mqtt://192.168.1.10:1883`. The `mqtts://`, `ws://` and `wss://` schemes are supported too. Typing the address alone (`192.168.1.10:1884`) works: `mqtt://` is added for you. |
+| **Username / Password**           | Leave empty if your broker allows anonymous connections.                                                                                                                                                            |
+| **Base topic**                    | The `mqtt.base_topic` configured in Zigbee2MQTT. `zigbee2mqtt` in almost every case.                                                                                                                                |
+| **CA certificate (PEM)**          | Only for `mqtts://` or `wss://` with a self-signed certificate or a private authority: paste the certificate of that authority (or the broker's own self-signed one). Pasting it on a single line is fine.          |
+| **Verify the broker certificate** | On by default. Turning it off accepts any certificate — including the one of a machine pretending to be your broker. Prefer the certificate above.                                                                  |
 
 Then click **Test the MQTT connection**: the button reports whether it is
 connected, how many devices it sees and how many messages it received. It is the
@@ -354,7 +356,12 @@ answering a wrong value.
 
 **The test button says it is not connected.** Check the URL (with the port,
 `1883` by default), the credentials, and that the broker accepts connections from
-the Gladys machine.
+the Gladys machine. Credentials written into the URL (`mqtt://user:pass@host`)
+work, but they are shown as `***` in the messages and the logs.
+
+**The test button mentions a self-signed certificate.** Your `mqtts://` broker
+uses a certificate Node does not trust: paste its certificate authority in **CA
+certificate (PEM)** (TLS section).
 
 **It is connected, but sees no device.** The base topic probably does not match
 the one Zigbee2MQTT uses. Compare it with `mqtt.base_topic` in your

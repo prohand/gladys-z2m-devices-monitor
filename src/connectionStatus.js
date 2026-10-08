@@ -17,6 +17,8 @@
 //     used to stay on screen forever once everything had recovered.
 // -----------------------------------------------------------------------------
 
+import { redactBrokerUrl } from './config.js';
+
 // How long we wait for `bridge/devices` before telling the user the base topic
 // is probably wrong.
 export const INVENTORY_GRACE_MS = 30 * 1000;
@@ -35,12 +37,13 @@ export const INVENTORY_GRACE_MS = 30 * 1000;
  */
 export function buildConnectionStatus({ mqtt, monitor, config, mqttStartedAt, now = Date.now() }) {
   if (!mqtt?.connected) {
+    const url = redactBrokerUrl(config.mqtt_url);
     const reason = mqtt?.lastError ? ` (${mqtt.lastError.message})` : '';
     return {
       connected: false,
       message: {
-        en: `Cannot reach the MQTT broker at ${config.mqtt_url}${reason}.`,
-        fr: `Broker MQTT injoignable sur ${config.mqtt_url}${reason}.`,
+        en: `Cannot reach the MQTT broker at ${url}${reason}.`,
+        fr: `Broker MQTT injoignable sur ${url}${reason}.`,
       },
     };
   }

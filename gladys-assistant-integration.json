@@ -106,6 +106,50 @@
       "default": "zigbee2mqtt"
     },
     {
+      "key": "tls",
+      "type": "section",
+      "label": {
+        "en": "TLS (mqtts:// and wss:// only)",
+        "fr": "TLS (mqtts:// et wss:// uniquement)"
+      },
+      "description": {
+        "en": "Only for a broker reached over TLS. A broker at home usually runs on a self-signed certificate or a private certificate authority, which is refused by default: paste the certificate of that authority (or the broker's own self-signed certificate) below, in PEM format. Turning the verification off also works, but then any machine on your network can pretend to be your broker.",
+        "fr": "Uniquement pour un broker joint en TLS. Un broker domestique utilise le plus souvent un certificat auto-signé ou une autorité de certification privée, refusés par défaut : collez ci-dessous le certificat de cette autorité (ou le certificat auto-signé du broker), au format PEM. Désactiver la vérification fonctionne aussi, mais n'importe quelle machine de votre réseau peut alors se faire passer pour votre broker."
+      }
+    },
+    {
+      "key": "mqtt_ca_certificate",
+      "type": "string",
+      "label": {
+        "en": "CA certificate (PEM)",
+        "fr": "Certificat de l'autorité (PEM)"
+      },
+      "description": {
+        "en": "The whole text, from -----BEGIN CERTIFICATE----- to -----END CERTIFICATE-----. Pasting it on a single line is fine. Leave empty for a certificate signed by a public authority.",
+        "fr": "Le texte complet, de -----BEGIN CERTIFICATE----- à -----END CERTIFICATE-----. Le coller sur une seule ligne convient. Laissez vide pour un certificat signé par une autorité publique."
+      },
+      "placeholder": {
+        "en": "-----BEGIN CERTIFICATE----- …",
+        "fr": "-----BEGIN CERTIFICATE----- …"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "mqtt_reject_unauthorized",
+      "type": "boolean",
+      "label": {
+        "en": "Verify the broker certificate",
+        "fr": "Vérifier le certificat du broker"
+      },
+      "description": {
+        "en": "Keep it on. Off accepts any certificate, including an attacker's.",
+        "fr": "Laissez-la activée. Désactivée, n'importe quel certificat est accepté, y compris celui d'un attaquant."
+      },
+      "required": false,
+      "default": true
+    },
+    {
       "key": "thresholds",
       "type": "section",
       "label": {

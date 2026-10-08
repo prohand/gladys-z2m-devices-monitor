@@ -55,6 +55,8 @@ obligatoire.
 | **URL du broker**                    | L'adresse de votre broker MQTT, par exemple `mqtt://192.168.1.10:1883`. Les schémas `mqtts://`, `ws://` et `wss://` sont acceptés. Saisir l'adresse seule (`192.168.1.10:1884`) fonctionne : `mqtt://` est ajouté pour vous. |
 | **Nom d'utilisateur / Mot de passe** | À laisser vides si votre broker accepte les connexions anonymes.                                                                                                                                                             |
 | **Topic de base**                    | Le `mqtt.base_topic` configuré dans Zigbee2MQTT. `zigbee2mqtt` dans la quasi-totalité des cas.                                                                                                                               |
+| **Certificat de l'autorité (PEM)**   | Uniquement en `mqtts://` ou `wss://` avec un certificat auto-signé ou une autorité privée : collez le certificat de l'autorité (ou celui, auto-signé, du broker). Le coller sur une seule ligne convient.                    |
+| **Vérifier le certificat du broker** | Activé par défaut. Le désactiver accepte n'importe quel certificat — y compris celui d'une machine qui se ferait passer pour votre broker. Préférez le certificat ci-dessus.                                                 |
 
 Cliquez ensuite sur **Tester la connexion MQTT** : le bouton indique s'il est
 connecté, combien d'appareils il voit et combien de messages il a reçus. C'est le
@@ -374,7 +376,13 @@ que de répondre une valeur fausse.
 
 **Le bouton de test dit qu'il n'est pas connecté.** Vérifiez l'URL (avec le port,
 `1883` par défaut), les identifiants, et que le broker autorise les connexions
-depuis l'adresse de Gladys.
+depuis l'adresse de Gladys. Des identifiants écrits dans l'URL
+(`mqtt://utilisateur:motdepasse@hote`) fonctionnent, mais ils sont affichés `***`
+dans les messages et les logs.
+
+**Le bouton de test parle d'un certificat auto-signé (« self-signed »).** Votre
+broker `mqtts://` utilise un certificat que Node ne reconnaît pas : collez son
+autorité de certification dans **Certificat de l'autorité (PEM)** (section TLS).
 
 **Il est connecté, mais ne voit aucun appareil.** Le topic de base ne correspond
 probablement pas à celui de Zigbee2MQTT. Comparez-le avec `mqtt.base_topic` dans

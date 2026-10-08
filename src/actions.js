@@ -7,6 +7,7 @@
 // multi-language message, displayed under its button.
 // -----------------------------------------------------------------------------
 
+import { redactBrokerUrl } from './config.js';
 import { describeBridge, formatDuration } from './format.js';
 import { isBatteryPowered } from './monitor.js';
 
@@ -25,6 +26,8 @@ const MAX_LISTED_DEVICES = 15;
  * @returns {{en: string, fr: string}} The message shown under the button.
  */
 export function testConnection({ mqtt, monitor, config }) {
+  // Never quote credentials typed into the URL (`mqtt://user:pass@host`).
+  const url = redactBrokerUrl(config.mqtt_url);
   if (!mqtt) {
     return {
       en: 'The monitor is not started yet, try again in a few seconds.',
@@ -37,24 +40,24 @@ export function testConnection({ mqtt, monitor, config }) {
     mqtt.reconnectNow();
     const reason = mqtt.lastError ? ` (${mqtt.lastError.message})` : '';
     return {
-      en: `Not connected to ${config.mqtt_url}${reason}. Check the URL, the credentials and that the broker is reachable from Gladys.`,
-      fr: `Non connecté à ${config.mqtt_url}${reason}. Vérifiez l'URL, les identifiants et que le broker est joignable depuis Gladys.`,
+      en: `Not connected to ${url}${reason}. Check the URL, the credentials and that the broker is reachable from Gladys.`,
+      fr: `Non connecté à ${url}${reason}. Vérifiez l'URL, les identifiants et que le broker est joignable depuis Gladys.`,
     };
   }
 
   const snapshot = monitor.snapshot();
   if (!snapshot.summary.inventoryReceived) {
     return {
-      en: `Connected to ${config.mqtt_url}, but nothing was received on ${config.base_topic}/bridge/devices. Check the base topic configured in Zigbee2MQTT.`,
-      fr: `Connecté à ${config.mqtt_url}, mais rien reçu sur ${config.base_topic}/bridge/devices. Vérifiez le topic de base configuré dans Zigbee2MQTT.`,
+      en: `Connected to ${url}, but nothing was received on ${config.base_topic}/bridge/devices. Check the base topic configured in Zigbee2MQTT.`,
+      fr: `Connecté à ${url}, mais rien reçu sur ${config.base_topic}/bridge/devices. Vérifiez le topic de base configuré dans Zigbee2MQTT.`,
     };
   }
 
   const { monitored, silent } = snapshot.summary;
   const bridge = describeBridge(snapshot.summary.bridgeOnline);
   return {
-    en: `Connected to ${config.mqtt_url}. ${monitored} device(s) watched, ${silent} silent, ${mqtt.messagesReceived} message(s) received. Zigbee2MQTT bridge: ${bridge.en}.`,
-    fr: `Connecté à ${config.mqtt_url}. ${monitored} appareil(s) surveillé(s), ${silent} silencieux, ${mqtt.messagesReceived} message(s) reçu(s). Bridge Zigbee2MQTT : ${bridge.fr}.`,
+    en: `Connected to ${url}. ${monitored} device(s) watched, ${silent} silent, ${mqtt.messagesReceived} message(s) received. Zigbee2MQTT bridge: ${bridge.en}.`,
+    fr: `Connecté à ${url}. ${monitored} appareil(s) surveillé(s), ${silent} silencieux, ${mqtt.messagesReceived} message(s) reçu(s). Bridge Zigbee2MQTT : ${bridge.fr}.`,
   };
 }
 

@@ -99,3 +99,16 @@ test('reset makes the next report go out even when unchanged', async () => {
   reporter.reset();
   assert.equal(await reporter.report({ connected: true }), true);
 });
+
+test('the status never shows the credentials of the broker URL', () => {
+  const status = buildConnectionStatus({
+    mqtt: { connected: false, lastError: null },
+    monitor: { inventoryReceivedAt: null },
+    config: normalizeConfig({ mqtt_url: 'mqtt://gladys:s3cret@broker:1883' }),
+    mqttStartedAt: START,
+    now: START,
+  });
+  assert.doesNotMatch(status.message.en, /s3cret/);
+  assert.doesNotMatch(status.message.fr, /s3cret/);
+  assert.match(status.message.en, /mqtt:\/\/\*\*\*@broker:1883/);
+});
