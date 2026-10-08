@@ -6,7 +6,20 @@
 // an MQTT broker.
 // -----------------------------------------------------------------------------
 
-export function createFakeGladys({ failPublishStates = false } = {}) {
+/**
+ * Build the fake.
+ * @param {object} [options] - Options.
+ * @param {boolean} [options.failPublishStates] - Make every `publishStates` reject.
+ * @param {number} [options.rateLimitedCalls] - Answer the first N `publishStates` with a 429, the way the host API does past its budget.
+ * @param {number} [options.retryAfter] - `retryAfter` (seconds) carried by those 429 errors.
+ * @returns {object} The fake SDK object.
+ */
+export function createFakeGladys({
+  failPublishStates = false,
+  rateLimitedCalls = 0,
+  retryAfter,
+} = {}) {
+  let rateLimitedLeft = rateLimitedCalls;
   const published = [];
   const batches = [];
   const discovered = [];
@@ -42,6 +55,16 @@ export function createFakeGladys({ failPublishStates = false } = {}) {
     async publishStates(states) {
       if (failPublishStates) {
         throw new Error('publishStates failed');
+      }
+      if (rateLimitedLeft > 0) {
+        rateLimitedLeft -= 1;
+        // The shape of the SDK's GladysApiError.
+        throw Object.assign(new Error('Too many requests'), {
+          name: 'GladysApiError',
+          status: 429,
+          code: 'TOO_MANY_REQUESTS',
+          retryAfter,
+        });
       }
       // The host API validates the whole batch BEFORE saving any of it, so a
       // single malformed state silently costs the network its entire update.

@@ -76,6 +76,19 @@ MQTT broker → mqttClient.js → messageRouter.js → DevicesMonitor (pure stat
   (`buildConnectionStatus`) and when it is re-sent (`ConnectionStatusReporter`: deduped, but a
   failed delivery is never considered delivered).
 
+### Lifecycle (`index.js`)
+
+- **Every publication is one single-flight pass** (`src/singleFlight.js`): discovery when due, then
+  states, scene events, widget nudge. The tick, the reconnection, the debounces, the configuration
+  update and the buttons all go through `requestPublish()`; never call `publishDevices` /
+  `publishStates` directly — two interleaved passes send the same states twice and can fire the
+  same scene event twice. A failed discovery publish stays due and does not hold the states back.
+- **On `connected`, the watchdog is armed FIRST**, before reading the configuration and the full
+  republication: a transient 429/5xx there used to leave a reconnected integration with no tick at
+  all. The tick finishes whatever failed (configuration not loaded yet, discovery still due).
+- **`/data` persistence is not tied to the WebSocket**: restored and armed once at boot (see
+  **Sandbox**), saved again on SIGTERM through `handleShutdown`.
+
 ### Invariants that are easy to break
 
 These are the rules the design hangs on; the tests encode each of them.
@@ -130,7 +143,13 @@ them):
   `no_silent_devices_text` guarantee in `normalizeConfig`.
 - 300 states/min per integration, 100 per request. `Alive` is the alert and is never throttled;
   `Silence` is a gauge that moves every minute and carries a `minIntervalMs`. Unchanged values are
-  still republished every `refreshMs` (30 min) so a device screen is never blank.
+  still republished every `refreshMs` (30 min, minus a random jitter of up to 20 % drawn per
+  feature on every publish, so the whole network never comes due on one tick) so a device screen is
+  never blank. Dedupe alone does not bound a FULL pass (reconnection, first start: 2 states per
+  device), so the publisher also keeps a sliding one-minute budget (`STATES_PER_MINUTE`, 250):
+  alerts go first, what does not fit is not recorded and goes out on the next pass. A 429 is waited
+  out (`retryAfter` when the error carries one — SDK 0.14 does not surface `Retry-After` — one
+  window otherwise, capped) and retried ONCE, then thrown with the states still due.
 - Gladys drops states for features the user hasn't created yet, while the publisher believes them
   delivered — hence `publisher.forgetDevice()` on `onDeviceCreated` / `onDeviceUpdated`.
 - A category/type pair the front does not know is accepted by the API and then drawn as an empty,
