@@ -128,7 +128,10 @@ VERDICT only, a device that was still within its threshold when an outage began 
 END of that outage (`verdictReference`, `inGrace` in the snapshot): without it, an outage longer
 than the threshold declared every mains device silent on the first tick and "back" a minute later.
 A device already dead before the outage gets no grace (no false "back"); the displayed `Silence`
-gauge is never adjusted. The container being down is an outage too: `heard_at` in the `/data` file
+gauge is never adjusted. The cost is accepted on purpose: a device that truly died DURING the
+outage is announced one threshold after the reconnection instead of one threshold after its last
+message, i.e. late by at most the outage's length — the same trade as the frozen verdicts below,
+one late event rather than a storm. The container being down is an outage too: `heard_at` in the `/data` file
 is when the previous run last heard the network, and a file without it is NOT guessed from the
 last-seen timestamps (that would revive a device already declared dead).
 

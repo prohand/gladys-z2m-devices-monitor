@@ -368,7 +368,10 @@ que de répondre une valeur fausse.
   complet, compté depuis le retour du réseau, avant d'être déclaré silencieux.
   Sa fonctionnalité _Silence_ continue pourtant d'afficher la durée réelle
   depuis son dernier message. Un appareil déjà silencieux avant la coupure le
-  reste.
+  reste. Le prix de ce choix : un appareil vraiment mort pendant la coupure est
+  signalé plus tard que d'habitude, au plus de la durée de la coupure — plutôt
+  que tous les appareils secteur signalés silencieux puis de retour à la fin
+  d'une seule panne.
 - **Les groupes Zigbee2MQTT sont ignorés** : ils publient sous le même topic que
   les appareils, mais ne sont pas des appareils.
 

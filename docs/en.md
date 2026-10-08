@@ -348,7 +348,10 @@ answering a wrong value.
   a device that was answering when the outage began gets one full threshold,
   counted from when the network is back, before being declared silent. Its
   _Silence_ feature still shows the real time since its last message. A device
-  already silent before the outage stays silent.
+  already silent before the outage stays silent. The price of this: a device
+  that really died during the outage is reported later than usual, by at most
+  the length of the outage — rather than every mains device being reported
+  silent, then back, at the end of a single failure.
 - **Zigbee2MQTT groups are ignored**: they publish under the same topic as the
   devices, but they are not devices.
 
