@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { validateWidgetContent } from '@gladysassistant/integration-sdk';
 import { normalizeConfig } from '../src/config.js';
+import { LANGUAGES } from '../src/format.js';
 import { DevicesMonitor } from '../src/monitor.js';
 import { buildNetworkHealthWidget, networkHealthSignature } from '../src/widget.js';
 import { parseBridgeDevices } from '../src/z2m/payloads.js';
@@ -41,6 +42,40 @@ test('every content fits the widget vocabulary and budget', () => {
   assert.deepEqual(validateWidgetContent(buildNetworkHealthWidget(monitor.snapshot())), []);
 });
 
+/**
+ * Every multi-language text of a content (any object carrying an `en` key).
+ * @param {unknown} node - A content, or a part of one.
+ * @returns {Array<Record<string, string>>} The texts found.
+ */
+function textsOf(node) {
+  if (Array.isArray(node)) {
+    return node.flatMap(textsOf);
+  }
+  if (node && typeof node === 'object') {
+    return typeof node.en === 'string' ? [node] : Object.values(node).flatMap(textsOf);
+  }
+  return [];
+}
+
+// The core renders the reader's language and falls back on English: a text
+// missing a language would silently read English to a German or Spanish user.
+test('every text of the widget is written in the four languages of Gladys', () => {
+  const { monitor, clock } = createMonitor();
+  const empty = new DevicesMonitor({ config: normalizeConfig(), now: clock.now });
+  monitor.setBridgeOnline(true);
+  const contents = [
+    buildNetworkHealthWidget(empty.snapshot()),
+    buildNetworkHealthWidget(monitor.snapshot()),
+  ];
+  clock.advanceMinutes(5000);
+  contents.push(buildNetworkHealthWidget(monitor.snapshot()));
+  const texts = contents.flatMap(textsOf);
+  assert.ok(texts.length > 5);
+  for (const text of texts) {
+    assert.deepEqual(Object.keys(text), LANGUAGES, JSON.stringify(text));
+  }
+});
+
 test('the tiles count the silent, alive and watched devices', () => {
   const { monitor, clock } = createMonitor();
   clock.advanceMinutes(121);
@@ -57,16 +92,26 @@ test('the status list names the silent devices and how long they have been quiet
   monitor.setBridgeOnline(true);
   clock.advanceMinutes(185);
   const [status] = componentsOf(buildNetworkHealthWidget(monitor.snapshot()), 'status');
-  assert.deepEqual(status.items[0].value, { en: 'online', fr: 'en ligne' });
+  assert.deepEqual(status.items[0].value, {
+    en: 'online',
+    fr: 'en ligne',
+    de: 'online',
+    es: 'en línea',
+  });
   assert.equal(status.items[1].label, 'office plug');
-  assert.deepEqual(status.items[1].value, { en: '3 h 5 min', fr: '3 h 5 min' });
+  assert.deepEqual(status.items[1].value, {
+    en: '3 h 5 min',
+    fr: '3 h 5 min',
+    de: '3 h 5 min',
+    es: '3 h 5 min',
+  });
   assert.equal(status.items.length, 2);
 });
 
 test('an all-clear network says so instead of showing an empty list', () => {
   const { monitor } = createMonitor();
   const [status] = componentsOf(buildNetworkHealthWidget(monitor.snapshot()), 'status');
-  assert.deepEqual(status.items[1].value, { en: 'none', fr: 'aucun' });
+  assert.deepEqual(status.items[1].value, { en: 'none', fr: 'aucun', de: 'keine', es: 'ninguno' });
   assert.equal(status.items[1].color, 'success');
 });
 

@@ -15,7 +15,7 @@
 // -----------------------------------------------------------------------------
 
 import { WIDGET_COLORS } from '@gladysassistant/integration-sdk';
-import { describeBridge, formatDuration } from './format.js';
+import { NEVER_SEEN, describeBridge, formatDuration, inEveryLanguage } from './format.js';
 import { filterByPowerSource, isBatteryPowered } from './monitor.js';
 
 export const WIDGET = {
@@ -47,6 +47,8 @@ export function buildNetworkHealthWidget(snapshot, settings = {}) {
           text: {
             en: 'Waiting for the Zigbee2MQTT device inventory. Check the MQTT connection from the integration page if this lasts.',
             fr: "En attente de l'inventaire des appareils Zigbee2MQTT. Vérifiez la connexion MQTT depuis la page de l'intégration si cela dure.",
+            de: 'Warten auf das Geräteinventar von Zigbee2MQTT. Prüfen Sie die MQTT-Verbindung auf der Seite der Integration, falls dies anhält.',
+            es: 'Esperando el inventario de dispositivos de Zigbee2MQTT. Si esto se prolonga, compruebe la conexión MQTT desde la página de la integración.',
           },
         },
       ],
@@ -64,21 +66,21 @@ export function buildNetworkHealthWidget(snapshot, settings = {}) {
     components: [
       {
         type: 'value',
-        label: { en: 'Silent', fr: 'Silencieux' },
+        label: { en: 'Silent', fr: 'Silencieux', de: 'Stumm', es: 'En silencio' },
         value: silent.length,
         icon: 'alert-triangle',
         color: silent.length > 0 ? WIDGET_COLORS.DANGER : WIDGET_COLORS.SUCCESS,
       },
       {
         type: 'value',
-        label: { en: 'Alive', fr: 'En vie' },
+        label: { en: 'Alive', fr: 'En vie', de: 'Lebendig', es: 'Vivos' },
         value: watched.length - silent.length,
         icon: 'check-circle',
         color: WIDGET_COLORS.SUCCESS,
       },
       {
         type: 'value',
-        label: { en: 'Watched', fr: 'Surveillés' },
+        label: { en: 'Watched', fr: 'Surveillés', de: 'Überwacht', es: 'Vigilados' },
         value: watched.length,
         icon: 'eye',
         color: WIDGET_COLORS.NEUTRAL,
@@ -113,7 +115,12 @@ function bridgeRow(bridgeOnline) {
     color = bridgeOnline ? WIDGET_COLORS.SUCCESS : WIDGET_COLORS.DANGER;
   }
   return {
-    label: { en: 'Zigbee2MQTT bridge', fr: 'Bridge Zigbee2MQTT' },
+    label: {
+      en: 'Zigbee2MQTT bridge',
+      fr: 'Bridge Zigbee2MQTT',
+      de: 'Zigbee2MQTT-Bridge',
+      es: 'Bridge Zigbee2MQTT',
+    },
     value: describeBridge(bridgeOnline),
     icon: 'radio',
     color,
@@ -130,8 +137,13 @@ function silentRows(silent) {
   if (silent.length === 0) {
     return [
       {
-        label: { en: 'Silent devices', fr: 'Appareils silencieux' },
-        value: { en: 'none', fr: 'aucun' },
+        label: {
+          en: 'Silent devices',
+          fr: 'Appareils silencieux',
+          de: 'Stumme Geräte',
+          es: 'Dispositivos en silencio',
+        },
+        value: { en: 'none', fr: 'aucun', de: 'keine', es: 'ninguno' },
         icon: 'check',
         color: WIDGET_COLORS.SUCCESS,
       },
@@ -142,17 +154,19 @@ function silentRows(silent) {
   const rows = listed.map((device) => ({
     label: device.friendlyName,
     value: device.neverSeen
-      ? { en: 'never seen', fr: 'jamais vu' }
-      : {
-          en: formatDuration(device.silenceMinutes, 'en'),
-          fr: formatDuration(device.silenceMinutes, 'fr'),
-        },
+      ? NEVER_SEEN
+      : inEveryLanguage((language) => formatDuration(device.silenceMinutes, language)),
     icon: isBatteryPowered(device) ? 'battery' : 'zap',
     color: WIDGET_COLORS.DANGER,
   }));
   if (overflow) {
     rows.push({
-      label: { en: 'Other silent devices', fr: 'Autres appareils silencieux' },
+      label: {
+        en: 'Other silent devices',
+        fr: 'Autres appareils silencieux',
+        de: 'Weitere stumme Geräte',
+        es: 'Otros dispositivos en silencio',
+      },
       value: silent.length - listed.length,
       icon: 'more-horizontal',
       color: WIDGET_COLORS.DANGER,
