@@ -88,8 +88,8 @@ The copy/paste is short though:
 
 ### 3. Add the devices
 
-Go to **Devices → Discover**, then create the devices you want to watch. You will
-find:
+Open the integration's **Discover** tab, then add the devices you want to watch
+with **Add to Gladys**. You will find:
 
 - one device **per Zigbee device** known to Zigbee2MQTT;
 - one **Zigbee2MQTT monitor** device summarizing the whole network.
@@ -157,9 +157,9 @@ Every watched device exposes **2 features**:
 
 If you added your devices with version 1.0.1 or earlier, their **Alive** feature
 was published in another category, which the Gladys screens draw as an empty tag
-— it looks as if the device only carries **Silence**. The Discovery screen offers
-an **Update** button on each of those devices: click it and the feature comes
-back, history included.
+— it looks as if the device only carries **Silence**. The **Discover** tab
+offers an **Update** button on each of those devices: click it and the feature
+comes back, history included.
 
 The **Zigbee2MQTT monitor** device exposes **5 features**:
 
@@ -205,7 +205,8 @@ would only clutter the device lists and the scene pickers.
 
 ## The dashboard widget
 
-Edit your dashboard and add the **Zigbee health** widget. At a glance it shows:
+In **Dashboard → Edit → New widget**, add the **Zigbee health** widget. At a
+glance it shows:
 
 - three counters: **silent**, **alive** and **watched** devices;
 - the state of the **Zigbee2MQTT bridge**;
@@ -228,7 +229,7 @@ The integration raises the flag, Gladys sends the alert.
    silent**. Leave the filters empty to cover the whole network, including the
    devices paired later, or pick one **Device** and/or a **Power source**
    (battery, mains);
-3. action: **Send a message** with something like:
+3. action: **Send Message** with something like:
 
    > {{triggerEvent.data.device_name}} has given no sign of life for
    > {{triggerEvent.data.silence_minutes}} minutes.
@@ -267,7 +268,7 @@ The former method, still valid. It fires once, when the number of silent
 devices goes above zero.
 
 1. **Scenes → New scene**;
-2. trigger: **A device value changes** → device _Zigbee2MQTT monitor_, feature
+2. trigger: **Device state change** → device _Zigbee2MQTT monitor_, feature
    **Silent devices**, condition _greater than_ `0`;
 3. first action: **Get device value** → under _Select a device_, pick
    **Zigbee2MQTT monitor (Text)**, i.e. the **Silent device names** feature.
@@ -276,7 +277,7 @@ devices goes above zero.
    fetched by an action placed **before** it. Without this box the message's
    variable picker is empty, and the alert cannot name the sensors involved;
 
-4. second action: **Send a message** (mobile notification, Telegram…) with
+4. second action: **Send Message** (mobile notification, Telegram…) with
    something like:
 
    > Zigbee device(s) with no sign of life: _Device last value_
@@ -313,7 +314,7 @@ If the Zigbee2MQTT inventory has not been received yet, or the device is no
 longer watched, the action fails (the scene logs it and carries on) rather than
 answering a wrong value.
 
-## The buttons on the Configuration screen
+## The buttons in the Configuration tab
 
 - **Test the MQTT connection** — the live connection state, how many devices are
   watched, how many messages were received, and the precise reason on failure.

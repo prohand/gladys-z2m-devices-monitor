@@ -5,7 +5,7 @@
   "description": {
     "en": "Alerts you when a Zigbee2MQTT device stops giving signs of life.",
     "fr": "Vous alerte quand un appareil Zigbee2MQTT ne donne plus signe de vie.",
-    "de": "Warnt Sie, wenn ein Zigbee2MQTT-Gerät keine Lebenszeichen mehr gibt.",
+    "de": "Warnt dich, wenn ein Zigbee2MQTT-Gerät keine Lebenszeichen mehr gibt.",
     "es": "Le avisa cuando un dispositivo Zigbee2MQTT deja de dar señales de vida."
   },
   "version": "2.2.2",
@@ -54,7 +54,7 @@
       "description": {
         "en": "The same broker Zigbee2MQTT publishes on. The integration only ever subscribes: it never publishes anything to your Zigbee network. These values have to be typed in here: an integration runs in its own sandbox and Gladys never hands it the settings of another integration. If Gladys installed Zigbee2MQTT for you, copy them from the Zigbee2MQTT integration, Setup tab, \"External tools connection\" block — and replace localhost in the URL with the IP address of your Gladys machine.",
         "fr": "Le même broker que celui utilisé par Zigbee2MQTT. L'intégration ne fait que s'abonner : elle ne publie jamais rien sur votre réseau Zigbee. Ces valeurs doivent être saisies ici : une intégration tourne dans son propre bac à sable et Gladys ne lui communique jamais les réglages d'une autre intégration. Si c'est Gladys qui a installé Zigbee2MQTT, recopiez-les depuis l'intégration Zigbee2MQTT, onglet Configuration, bloc « Connexion pour outils externes » — en remplaçant localhost dans l'URL par l'adresse IP de votre machine Gladys.",
-        "de": "Derselbe Broker, auf dem Zigbee2MQTT veröffentlicht. Die Integration abonniert nur und veröffentlicht nie etwas in Ihrem Zigbee-Netzwerk. Diese Werte müssen hier eingegeben werden: Eine Integration läuft in ihrer eigenen Sandbox, und Gladys gibt ihr nie die Einstellungen einer anderen Integration weiter. Wenn Gladys Zigbee2MQTT für Sie installiert hat, kopieren Sie sie aus der Zigbee2MQTT-Integration, Tab „Einrichtung“, Block „Verbindung für externe Tools“ — und ersetzen Sie localhost in der URL durch die IP-Adresse Ihres Gladys-Rechners.",
+        "de": "Derselbe Broker, auf dem Zigbee2MQTT veröffentlicht. Die Integration abonniert nur und veröffentlicht nie etwas in deinem Zigbee-Netzwerk. Diese Werte müssen hier eingegeben werden: Eine Integration läuft in ihrer eigenen Sandbox, und Gladys gibt ihr nie die Einstellungen einer anderen Integration weiter. Wenn Gladys Zigbee2MQTT für dich installiert hat, kopiere sie aus der Zigbee2MQTT-Integration, Tab „Einrichtung“, Block „Verbindung für externe Tools“ — und ersetze localhost in der URL durch die IP-Adresse deines Gladys-Rechners.",
         "es": "El mismo broker en el que publica Zigbee2MQTT. La integración solo se suscribe: nunca publica nada en su red Zigbee. Estos valores deben introducirse aquí: una integración se ejecuta en su propio entorno aislado y Gladys nunca le transmite los ajustes de otra integración. Si Gladys instaló Zigbee2MQTT por usted, cópielos desde la integración Zigbee2MQTT, pestaña «Configuración», bloque «Conexión de herramientas externas», y sustituya localhost en la URL por la dirección IP de su equipo Gladys."
       }
     },
@@ -94,7 +94,7 @@
       "description": {
         "en": "Leave empty if your broker allows anonymous connections.",
         "fr": "Laissez vide si votre broker accepte les connexions anonymes.",
-        "de": "Leer lassen, wenn Ihr Broker anonyme Verbindungen erlaubt.",
+        "de": "Leer lassen, wenn dein Broker anonyme Verbindungen erlaubt.",
         "es": "Déjelo vacío si su broker admite conexiones anónimas."
       },
       "required": false,
@@ -147,7 +147,7 @@
       "description": {
         "en": "Only for a broker reached over TLS. A broker at home usually runs on a self-signed certificate or a private certificate authority, which is refused by default: paste the certificate of that authority (or the broker's own self-signed certificate) below, in PEM format. Turning the verification off also works, but then any machine on your network can pretend to be your broker.",
         "fr": "Uniquement pour un broker joint en TLS. Un broker domestique utilise le plus souvent un certificat auto-signé ou une autorité de certification privée, refusés par défaut : collez ci-dessous le certificat de cette autorité (ou le certificat auto-signé du broker), au format PEM. Désactiver la vérification fonctionne aussi, mais n'importe quelle machine de votre réseau peut alors se faire passer pour votre broker.",
-        "de": "Nur für einen per TLS erreichten Broker. Ein Broker zu Hause verwendet meist ein selbstsigniertes Zertifikat oder eine private Zertifizierungsstelle, die standardmäßig abgelehnt werden: Fügen Sie unten das Zertifikat dieser Stelle (oder das selbstsignierte Zertifikat des Brokers) im PEM-Format ein. Die Überprüfung abzuschalten funktioniert auch, aber dann kann sich jeder Rechner in Ihrem Netzwerk als Ihr Broker ausgeben.",
+        "de": "Nur für einen per TLS erreichten Broker. Ein Broker zu Hause verwendet meist ein selbstsigniertes Zertifikat oder eine private Zertifizierungsstelle, die standardmäßig abgelehnt werden: Füge unten das Zertifikat dieser Stelle (oder das selbstsignierte Zertifikat des Brokers) im PEM-Format ein. Die Überprüfung abzuschalten funktioniert auch, aber dann kann sich jeder Rechner in deinem Netzwerk als dein Broker ausgeben.",
         "es": "Solo para un broker al que se accede mediante TLS. Un broker doméstico suele usar un certificado autofirmado o una autoridad de certificación privada, que se rechazan por defecto: pegue abajo el certificado de esa autoridad (o el certificado autofirmado del propio broker) en formato PEM. Desactivar la verificación también funciona, pero entonces cualquier equipo de su red puede hacerse pasar por su broker."
       }
     },
@@ -205,7 +205,7 @@
       "description": {
         "en": "A device is declared dead once it has been silent for longer than its threshold. Battery sensors report far less often than mains-powered devices, hence two separate defaults. Start generous: it is better to be alerted a few hours late than to be woken up by a false alarm.",
         "fr": "Un appareil est déclaré mort dès qu'il se tait depuis plus longtemps que son seuil. Les capteurs sur pile parlent bien moins souvent que les appareils sur secteur, d'où deux valeurs par défaut distinctes. Commencez large : mieux vaut être alerté quelques heures trop tard que réveillé par une fausse alerte.",
-        "de": "Ein Gerät gilt als tot, sobald es länger als sein Schwellenwert stumm ist. Batteriesensoren melden sich viel seltener als netzbetriebene Geräte, daher zwei getrennte Standardwerte. Beginnen Sie großzügig: Lieber ein paar Stunden zu spät gewarnt als von einem Fehlalarm geweckt werden.",
+        "de": "Ein Gerät gilt als tot, sobald es länger als sein Schwellenwert stumm ist. Batteriesensoren melden sich viel seltener als netzbetriebene Geräte, daher zwei getrennte Standardwerte. Beginne großzügig: Lieber ein paar Stunden zu spät gewarnt als von einem Fehlalarm geweckt werden.",
         "es": "Un dispositivo se declara muerto en cuanto lleva en silencio más tiempo que su umbral. Los sensores a pilas informan con mucha menos frecuencia que los dispositivos conectados a la red eléctrica, de ahí dos valores por defecto distintos. Empiece con holgura: es mejor recibir la alerta unas horas tarde que despertarse por una falsa alarma."
       }
     },
@@ -325,7 +325,7 @@
       "description": {
         "en": "The single device summarizing the whole network: how many devices are watched, how many are silent, and the names of the silent ones — the text a scene notification quotes. It is the one to build your alert on: its counters cover every device Zigbee2MQTT knows about, including the ones you pair later.",
         "fr": "L'appareil unique qui résume tout le réseau : combien d'appareils sont surveillés, combien sont silencieux, et le nom de ceux qui se taisent — le texte qu'une notification de scène reprend. C'est sur lui qu'il faut bâtir l'alerte : ses compteurs couvrent tous les appareils connus de Zigbee2MQTT, y compris ceux que vous appairerez plus tard.",
-        "de": "Das eine Gerät, das das ganze Netzwerk zusammenfasst: wie viele Geräte überwacht werden, wie viele stumm sind, und die Namen der stummen — der Text, den eine Szenenbenachrichtigung zitiert. Auf ihm sollten Sie Ihre Warnung aufbauen: Seine Zähler umfassen alle Geräte, die Zigbee2MQTT kennt, auch die, die Sie später koppeln.",
+        "de": "Das eine Gerät, das das ganze Netzwerk zusammenfasst: wie viele Geräte überwacht werden, wie viele stumm sind, und die Namen der stummen — der Text, den eine Szenenbenachrichtigung zitiert. Auf ihm solltest du deine Warnung aufbauen: Seine Zähler umfassen alle Geräte, die Zigbee2MQTT kennt, auch die, die du später koppelst.",
         "es": "El dispositivo único que resume toda la red: cuántos dispositivos se vigilan, cuántos están en silencio y los nombres de los que callan, el texto que cita una notificación de escena. Es sobre él donde debe construir su alerta: sus contadores cubren todos los dispositivos que conoce Zigbee2MQTT, incluidos los que vincule más adelante."
       }
     },
@@ -341,7 +341,7 @@
       "description": {
         "en": "What the \"Silent device names\" feature reads while the whole network is answering. Write it in your own language; empty restores the default.",
         "fr": "Ce qu'affiche la fonctionnalité « Silent device names » tant que tout le réseau répond. Écrivez-le dans votre langue ; vide rétablit la valeur par défaut.",
-        "de": "Der Text, den die Funktion „Silent device names“ anzeigt, solange das ganze Netzwerk antwortet. Schreiben Sie ihn in Ihrer Sprache; leer stellt den Standardwert wieder her.",
+        "de": "Der Text, den die Funktion „Silent device names“ anzeigt, solange das ganze Netzwerk antwortet. Schreibe ihn in deiner Sprache; leer stellt den Standardwert wieder her.",
         "es": "Lo que muestra la función «Silent device names» mientras toda la red responde. Escríbalo en su idioma; vacío restablece el valor por defecto."
       },
       "placeholder": {
@@ -874,7 +874,7 @@
           "description": {
             "en": "One of the watched devices you added to Gladys.",
             "fr": "Un des appareils surveillés que vous avez ajoutés à Gladys.",
-            "de": "Eines der überwachten Geräte, die Sie zu Gladys hinzugefügt haben.",
+            "de": "Eines der überwachten Geräte, die du zu Gladys hinzugefügt hast.",
             "es": "Uno de los dispositivos vigilados que ha añadido a Gladys."
           },
           "required": true

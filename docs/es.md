@@ -89,8 +89,8 @@ Aun así, copiarlos es rápido:
 
 ### 3. Añadir los dispositivos
 
-Vaya a **Dispositivos → Descubrir** y cree los dispositivos que desee vigilar.
-Encontrará:
+Abra la pestaña **Descubrir** de la integración y añada los dispositivos que
+desee vigilar con **Añadir a Gladys**. Encontrará:
 
 - un dispositivo **por cada dispositivo Zigbee** que conoce Zigbee2MQTT;
 - un dispositivo **Zigbee2MQTT monitor** que resume toda la red.
@@ -208,7 +208,8 @@ saturaría las listas de dispositivos y los selectores de escena.
 
 ## El widget del panel
 
-Edite su panel y añada el widget **Salud Zigbee**. De un vistazo muestra:
+En **Panel → Editar → Nuevo widget**, añada el widget **Salud Zigbee**. De un
+vistazo muestra:
 
 - tres contadores: dispositivos **en silencio**, **vivos** y **vigilados**;
 - el estado del **bridge de Zigbee2MQTT**;

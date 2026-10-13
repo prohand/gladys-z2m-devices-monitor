@@ -1,6 +1,6 @@
 # Z2M Devices Monitor — Dokumentation
 
-Diese Integration überwacht Ihre Zigbee2MQTT-Geräte und warnt Sie, wenn eines
+Diese Integration überwacht deine Zigbee2MQTT-Geräte und warnt dich, wenn eines
 davon **keine Lebenszeichen mehr gibt**.
 
 ## Warum nicht der Batteriestand
@@ -21,11 +21,11 @@ Genau das tut diese Integration.
 
 ## Was sie tut
 
-Sie abonniert alles, was Zigbee2MQTT auf Ihrem MQTT-Broker veröffentlicht
+Sie abonniert alles, was Zigbee2MQTT auf deinem MQTT-Broker veröffentlicht
 (`zigbee2mqtt/#`), merkt sich, wann sich jedes Gerät zuletzt gemeldet hat, und
 bewertet seine Funkstille laufend neu.
 
-Sie veröffentlicht **nie** etwas in Ihrem Zigbee-Netzwerk: Sie hört nur zu. Außerdem
+Sie veröffentlicht **nie** etwas in deinem Zigbee-Netzwerk: Sie hört nur zu. Außerdem
 unterscheidet sie:
 
 - eine Nachricht, die **vom** Gerät veröffentlicht wurde → Beweis, dass es lebt;
@@ -36,7 +36,7 @@ unterscheidet sie:
   diese Unterscheidung sähe ein toter Sensor so lange lebendig aus, wie etwas mit
   ihm spricht.
 
-Wenn Sie in Zigbee2MQTT die Option `advanced.last_seen` aktiviert haben, verwendet
+Wenn du in Zigbee2MQTT die Option `advanced.last_seen` aktiviert hast, verwendet
 die Integration den Zeitstempel, den die Geräte ihren Meldungen beifügen: die
 zuverlässigste Quelle überhaupt, die sogar _retained_-Nachrichten verwertbar macht.
 Erforderlich ist sie nicht.
@@ -51,49 +51,49 @@ Erforderlich ist sie nicht.
 
 ### 2. Konfiguration
 
-| Feld                                  | Was einzutragen ist                                                                                                                                                                                                                  |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Broker-URL**                        | Die Adresse Ihres MQTT-Brokers, z. B. `mqtt://192.168.1.10:1883`. Die Schemata `mqtts://`, `ws://` und `wss://` werden ebenfalls unterstützt. Nur die Adresse einzugeben (`192.168.1.10:1884`) funktioniert: `mqtt://` wird ergänzt. |
-| **Benutzername / Passwort**           | Leer lassen, wenn Ihr Broker anonyme Verbindungen erlaubt.                                                                                                                                                                           |
-| **Basis-Topic**                       | Das in Zigbee2MQTT konfigurierte `mqtt.base_topic`. In fast allen Fällen `zigbee2mqtt`.                                                                                                                                              |
-| **CA-Zertifikat (PEM)**               | Nur für `mqtts://` oder `wss://` mit einem selbstsignierten Zertifikat oder einer privaten Zertifizierungsstelle: Fügen Sie das Zertifikat dieser Stelle (oder das selbstsignierte des Brokers) ein. Eine einzige Zeile genügt.      |
-| **Zertifikat des Brokers überprüfen** | Standardmäßig eingeschaltet. Ausgeschaltet wird jedes Zertifikat akzeptiert — auch das eines Rechners, der sich als Ihr Broker ausgibt. Verwenden Sie lieber das Zertifikat oben.                                                    |
+| Feld                                  | Was einzutragen ist                                                                                                                                                                                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Broker-URL**                        | Die Adresse deines MQTT-Brokers, z. B. `mqtt://192.168.1.10:1883`. Die Schemata `mqtts://`, `ws://` und `wss://` werden ebenfalls unterstützt. Nur die Adresse einzugeben (`192.168.1.10:1884`) funktioniert: `mqtt://` wird ergänzt. |
+| **Benutzername / Passwort**           | Leer lassen, wenn dein Broker anonyme Verbindungen erlaubt.                                                                                                                                                                           |
+| **Basis-Topic**                       | Das in Zigbee2MQTT konfigurierte `mqtt.base_topic`. In fast allen Fällen `zigbee2mqtt`.                                                                                                                                               |
+| **CA-Zertifikat (PEM)**               | Nur für `mqtts://` oder `wss://` mit einem selbstsignierten Zertifikat oder einer privaten Zertifizierungsstelle: Füge das Zertifikat dieser Stelle (oder das selbstsignierte des Brokers) ein. Eine einzige Zeile genügt.            |
+| **Zertifikat des Brokers überprüfen** | Standardmäßig eingeschaltet. Ausgeschaltet wird jedes Zertifikat akzeptiert — auch das eines Rechners, der sich als dein Broker ausgibt. Verwende lieber das Zertifikat oben.                                                         |
 
-Klicken Sie dann auf **MQTT-Verbindung testen**: Die Schaltfläche meldet, ob die
+Klicke dann auf **MQTT-Verbindung testen**: Die Schaltfläche meldet, ob die
 Verbindung steht, wie viele Geräte erkannt werden und wie viele Nachrichten
 empfangen wurden. Das ist der schnellste Weg, den klassischen Fehler zu finden —
 richtiger Broker, falsches Basis-Topic, und es passiert gar nichts.
 
-#### Wo Sie diese drei Werte finden
+#### Wo du diese drei Werte findest
 
 **Sie müssen von Hand eingegeben werden: Die Integration kann sie nicht selbst aus
 Gladys auslesen.** Eine externe Integration läuft in ihrem eigenen Container, und
 Gladys übergibt ihr immer nur ihre _eigene_ Konfiguration; die API, die Gladys
 ihr bereitstellt, gewährt keinen Zugriff auf die Einstellungen oder Variablen
 einer anderen Integration. Das ist eine bewusste Eigenschaft der Sandbox, kein
-Versehen: Ohne sie könnte jede Integration aus dem Store die Zugangsdaten Ihrer
+Versehen: Ohne sie könnte jede Integration aus dem Store die Zugangsdaten deiner
 anderen Dienste lesen.
 
 Das Kopieren ist aber schnell erledigt:
 
-- **wenn Gladys Zigbee2MQTT für Sie installiert hat** (Modus „Installation aus
-  Gladys“), ist der Broker der von Gladys verwaltete Mosquitto-Container. Öffnen
-  Sie die Integration **Zigbee2MQTT** → Tab **Einrichtung** → Block **„Verbindung
+- **wenn Gladys Zigbee2MQTT für dich installiert hat** (Modus „Installation aus
+  Gladys“), ist der Broker der von Gladys verwaltete Mosquitto-Container. Öffne
+  die Integration **Zigbee2MQTT** → Tab **Einrichtung** → Block **„Verbindung
   für externe Tools“**: Gladys zeigt dort die URL, den Benutzernamen und das
   Passwort an, jeweils mit einer Kopierschaltfläche. Das Passwort wird bei der
   ersten Aktivierung zufällig erzeugt, es gibt also keinen „Standardwert“ zu
   erraten. Dieser Broker lauscht auf Port **1884**, und die angezeigte URL zeigt
-  auf `localhost`: **Ersetzen Sie `localhost` durch die IP-Adresse Ihres
+  auf `localhost`: **Ersetze `localhost` durch die IP-Adresse deines
   Gladys-Rechners**, sonst würde `localhost` den Container dieser Integration
   selbst bezeichnen. Das Basis-Topic ist `zigbee2mqtt`;
-- **wenn Sie Ihren eigenen Broker betreiben** (eigenständiges Zigbee2MQTT,
-  Mosquitto, Home Assistant…), verwenden Sie einfach die URL und die Zugangsdaten,
+- **wenn du deinen eigenen Broker betreibst** (eigenständiges Zigbee2MQTT,
+  Mosquitto, Home Assistant…), verwende einfach die URL und die Zugangsdaten,
   die Zigbee2MQTT selbst nutzt — den Block `mqtt:` seiner `configuration.yaml`.
 
 ### 3. Die Geräte hinzufügen
 
-Gehen Sie zu **Geräte → Entdecken** und erstellen Sie die Geräte, die Sie
-überwachen möchten. Sie finden dort:
+Öffne den Tab **Entdecken** der Integration und füge die Geräte, die du
+überwachen möchtest, mit **Zu Gladys hinzufügen** hinzu. Du findest dort:
 
 - ein Gerät **pro Zigbee-Gerät**, das Zigbee2MQTT kennt;
 - ein Gerät **Zigbee2MQTT monitor**, das das ganze Netzwerk zusammenfasst.
@@ -102,9 +102,9 @@ Gehen Sie zu **Geräte → Entdecken** und erstellen Sie die Geräte, die Sie
 standardmäßig `(monitor)`: `office plug (monitor)`. Ohne dieses Suffix wären sie
 nicht von den Geräten zu unterscheiden, die Gladys über die eigene
 Zigbee2MQTT-Integration bereits unter genau demselben Namen bereitstellt — eine
-Szenenauswahl würde „office plug“ zweimal anzeigen. Ändern (oder leeren) Sie es
+Szenenauswahl würde „office plug“ zweimal anzeigen. Ändere (oder leere) es
 unter **Benennung der Geräte**. Es gilt nur für die danach erstellten Geräte:
-Gladys benennt ein bereits hinzugefügtes Gerät nie um, benennen Sie es selbst auf
+Gladys benennt ein bereits hinzugefügtes Gerät nie um, benenne es selbst auf
 seiner Seite um.
 
 ### Was passiert, wenn sich das Zigbee-Netzwerk ändert?
@@ -114,17 +114,17 @@ aktualisiert sich der Bildschirm **Entdecken** von selbst:
 
 - **ein gerade gekoppeltes Gerät** erscheint innerhalb von Sekunden in der Liste,
   ohne Neustart und ohne Klick. Das Erstellen in Gladys bleibt aber **manuell** —
-  was in Ihre Installation aufgenommen wird, entscheiden Sie. Deshalb lohnt sich
+  was in deine Installation aufgenommen wird, entscheidest du. Deshalb lohnt sich
   vor allem die Szene auf dem Gerät **Zigbee2MQTT monitor**: Seine Zähler umfassen
-  alle Geräte, die Zigbee2MQTT kennt, auch die, die Sie nie in Gladys erstellt
-  haben, sodass ein neu gekoppeltes Gerät ab seinem Beitritt von der Warnung
+  alle Geräte, die Zigbee2MQTT kennt, auch die, die du nie in Gladys erstellt
+  hast, sodass ein neu gekoppeltes Gerät ab seinem Beitritt von der Warnung
   erfasst wird;
 - **ein aus Zigbee2MQTT entferntes Gerät** verschwindet vom Bildschirm
   **Entdecken**, wird nicht mehr gezählt und veröffentlicht keine Werte mehr. Wenn
-  Sie es bereits in Gladys erstellt hatten, wird sein Gerät **nicht automatisch
+  du es bereits in Gladys erstellt hattest, wird sein Gerät **nicht automatisch
   gelöscht**: Es bleibt bestehen, eingefroren auf seinem letzten Wert. Eine
-  Integration darf Ihre Geräte nicht löschen — entfernen Sie es unter **Geräte**,
-  wann immer Sie möchten.
+  Integration darf deine Geräte nicht löschen — entferne es unter **Geräte**,
+  wann immer du möchtest.
 
 ## Schwellenwerte für Funkstille
 
@@ -136,7 +136,7 @@ Standardwerte:
 - **batteriebetriebene Geräte** (Sensoren): 1440 Minuten, also 24 Stunden — sie
   schlafen die meiste Zeit.
 
-Sie können im Feld **Schwellenwerte pro Gerät** für jedes Gerät einzeln
+Du kannst im Feld **Schwellenwerte pro Gerät** für jedes Gerät einzeln
 nachjustieren, ein Paar `Gerät=Minuten` pro Zeile oder durch Kommas getrennt:
 
 ```
@@ -148,10 +148,10 @@ garage motion=180
 Das Gerät wird über seinen Zigbee2MQTT-Anzeigenamen (friendly name) oder seine
 IEEE-Adresse angegeben.
 
-**Beginnen Sie großzügig.** Ein zu knapper Schwellenwert erzeugt Fehlalarme, und
-eine Warnung, der niemand mehr glaubt, ist wertlos. Lassen Sie die Integration ein
-paar Tage laufen, sehen Sie sich den Wert „Silence“ auf jedem Gerätebildschirm an
-(Gladys beschriftet ihn mit _Dauer (ganze Zahl)_) und ziehen Sie die Schwellen
+**Beginne großzügig.** Ein zu knapper Schwellenwert erzeugt Fehlalarme, und
+eine Warnung, der niemand mehr glaubt, ist wertlos. Lass die Integration ein
+paar Tage laufen, sieh dir den Wert „Silence“ auf jedem Gerätebildschirm an
+(Gladys beschriftet ihn mit _Dauer (ganze Zahl)_) und zieh die Schwellen
 dann an.
 
 ## Was jedes Gerät bereitstellt
@@ -160,14 +160,14 @@ Jedes überwachte Gerät stellt **2 Funktionen** bereit:
 
 | Funktion    | Von Gladys angezeigter Name | Beschreibung                                                                                                                                                               |
 | ----------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Alive**   | _Status des Eingangs_       | Ein = das Gerät gibt Lebenszeichen, Aus = es ist länger als sein Schwellenwert stumm. Auf dieser Funktion sollten Sie eine Warnung aufbauen. Ihr Verlauf wird gespeichert. |
+| **Alive**   | _Status des Eingangs_       | Ein = das Gerät gibt Lebenszeichen, Aus = es ist länger als sein Schwellenwert stumm. Auf dieser Funktion solltest du eine Warnung aufbauen. Ihr Verlauf wird gespeichert. |
 | **Silence** | _Dauer (ganze Zahl)_        | Seit wie vielen Minuten das Gerät stumm ist. Nützlich, um die Schwellenwerte zu bemessen.                                                                                  |
 
-Wenn Sie Ihre Geräte mit Version 1.0.1 oder älter hinzugefügt haben, wurde ihre
+Wenn du deine Geräte mit Version 1.0.1 oder älter hinzugefügt haben, wurde ihre
 Funktion **Alive** in einer anderen Kategorie veröffentlicht, die die
 Gladys-Bildschirme als leeres Etikett darstellen — es sieht aus, als hätte das
 Gerät nur **Silence**. Der Bildschirm **Entdecken** bietet bei jedem dieser Geräte
-eine Schaltfläche **Aktualisieren** an: Klicken Sie darauf, und die Funktion ist
+eine Schaltfläche **Aktualisieren** an: Klicke darauf, und die Funktion ist
 wieder da, samt Verlauf.
 
 Das Gerät **Zigbee2MQTT monitor** stellt **5 Funktionen** bereit:
@@ -193,9 +193,9 @@ Namen.
 Das ist ein Verhalten von Gladys, keine Einstellung dieser Integration. Zwei
 praktische Folgen:
 
-- suchen Sie in einer Szenenauswahl nach dem angezeigten Namen („Zigbee2MQTT
+- suche in einer Szenenauswahl nach dem angezeigten Namen („Zigbee2MQTT
   monitor (Text)“ = die Namen der stummen Geräte);
-- Sie können eine Funktion auf der Geräteseite umbenennen, wenn Ihnen die
+- Du kannst eine Funktion auf der Geräteseite umbenennen, wenn dir die
   Standardbezeichnung nichts sagt.
 
 ### Der Text, wenn alles in Ordnung ist
@@ -204,7 +204,7 @@ praktische Folgen:
 damit, niemanden zu nennen — was eine gute Nachricht ist. Sie zeigt dann einen
 ausdrücklichen Satz statt eines Strichs an: standardmäßig **No silent device**.
 Mit dem Feld **Angezeigter Text, wenn kein Gerät stumm ist** (Abschnitt _Gerät
-„Zigbee2MQTT monitor“_) können Sie ihn übersetzen. Leeren Sie das Feld, um den
+„Zigbee2MQTT monitor“_) kannst du ihn übersetzen. Leere das Feld, um den
 Standardwert wiederherzustellen: Dieser Text darf nie leer sein, Gladys speichert
 keinen leeren Textzustand.
 
@@ -217,15 +217,15 @@ zweite Kopie derselben Zahl würde nur die Gerätelisten und die Szenenauswahl
 
 ## Das Dashboard-Widget
 
-Bearbeiten Sie Ihr Dashboard und fügen Sie das Widget **Zigbee-Zustand** hinzu. Es
-zeigt auf einen Blick:
+Füge unter **Dashboard → Bearbeiten → Neues Widget** das Widget
+**Zigbee-Zustand** hinzu. Es zeigt auf einen Blick:
 
 - drei Zähler: **stumme**, **lebendige** und **überwachte** Geräte;
 - den Zustand der **Zigbee2MQTT-Bridge**;
 - die Liste der stummen Geräte, jeweils mit der Dauer ihrer Funkstille (oder „nie
   gesehen“). Ab 9 Geräten gibt die letzte Zeile an, wie viele weitere stumm sind.
 
-Es funktioniert **direkt nach der Installation**, ohne dass Sie ein einziges Gerät
+Es funktioniert **direkt nach der Installation**, ohne dass du ein einziges Gerät
 in Gladys erstellen. Die Einstellung **Angezeigte Geräte** beschränkt es auf
 batterie- oder netzbetriebene Geräte — praktisch für zwei Widgets nebeneinander.
 Das Widget aktualisiert sich jede Minute von selbst und sofort, wenn ein Gerät
@@ -238,16 +238,16 @@ Die Integration schlägt Alarm, Gladys versendet die Warnung.
 ### Mit dem Auslöser der Integration (empfohlen)
 
 1. **Szenen → Neue Szene**;
-2. Auslöser: Wählen Sie in der Kategorie **Integrationen** den Auslöser **Ein
-   Zigbee-Gerät ist verstummt**. Lassen Sie die Filter leer, um das ganze
-   Netzwerk abzudecken, auch die später gekoppelten Geräte, oder wählen Sie ein
+2. Auslöser: Wähle in der Kategorie **Integrationen** den Auslöser **Ein
+   Zigbee-Gerät ist verstummt**. Lass die Filter leer, um das ganze
+   Netzwerk abzudecken, auch die später gekoppelten Geräte, oder wähle ein
    **Gerät** und/oder eine **Stromversorgung** (Batterie, Netz);
 3. Aktion: **Nachricht senden** mit etwa folgendem Inhalt:
 
    > {{triggerEvent.data.device_name}} gibt seit
    > {{triggerEvent.data.silence_minutes}} Minuten kein Lebenszeichen mehr.
 
-   Tippen Sie `{{` in die Nachricht, um die Variablen aus der Liste auszuwählen.
+   Tippe `{{` in die Nachricht, um die Variablen aus der Liste auszuwählen.
 
 Das war's: Kein Block „Gerätewert abrufen“ nötig. Die verfügbaren Variablen:
 
@@ -262,7 +262,7 @@ Das war's: Kein Block „Gerätewert abrufen“ nötig. Die verfügbaren Variabl
 Gut zu wissen über diesen Auslöser:
 
 - **eine Warnung pro Gerät**: Fällt ein zweiter Sensor aus, während der erste noch
-  stumm ist, erhalten Sie eine zweite Warnung — was die Zähler-Szene unten nicht
+  stumm ist, erhältst du eine zweite Warnung — was die Zähler-Szene unten nicht
   leistet;
 - **keine Flut, wenn Zigbee2MQTT selbst ausfällt**: Solange der Broker nicht
   erreichbar oder die Bridge offline ist, wird kein Gerät gemeldet (sie sind alle
@@ -286,7 +286,7 @@ stummen Geräte über null steigt.
 1. **Szenen → Neue Szene**;
 2. Auslöser: **Änderung von Gerätestatus** → Gerät _Zigbee2MQTT monitor_,
    Funktion **Silent devices**, Bedingung _größer_ `0`;
-3. erste Aktion: **Gerätewert abrufen** → unter _Gerät auswählen_ wählen Sie
+3. erste Aktion: **Gerätewert abrufen** → unter _Gerät auswählen_ wählst du
    **Zigbee2MQTT monitor (Text)**, also die Funktion **Silent device names**.
 
    Diesen Schritt vergisst jeder: In Gladys kann eine Nachricht nur Werte
@@ -299,19 +299,19 @@ stummen Geräte über null steigt.
 
    > Zigbee-Gerät(e) ohne Lebenszeichen: _Letzter Gerätewert_
 
-   Um diese Variable einzufügen, tippen Sie `{{` an der gewünschten Stelle der
+   Um diese Variable einzufügen, tippe `{{` an der gewünschten Stelle der
    Nachricht: Gladys bietet dann den in Schritt 3 abgerufenen Wert an, angezeigt
    als „1.1. Letzter Gerätewert“ (die Zahl ist die Position der Aktion
-   _Gerätewert abrufen_ in der Szene). Gehen Sie immer über diese Auswahl, statt
+   _Gerätewert abrufen_ in der Szene). Geh immer über diese Auswahl, statt
    die Variable von Hand einzutippen: So nennt die Nachricht die betroffenen
    Sensoren, statt nur zu sagen, dass etwas nicht stimmt.
 
 Für einen besonders kritischen Sensor (Rauchmelder, Alarmanlage, Gefriertruhe)
-legen Sie eine eigene Szene auf seiner Funktion **Alive** an, die auf Aus
+lege eine eigene Szene auf seiner Funktion **Alive** an, die auf Aus
 wechselt (in der Auswahl: _Gerätename (Status des Eingangs)_).
 
-Tipp: Fügen Sie der Szene eine Zeitbedingung hinzu, wenn Sie nachts nicht geweckt
-werden möchten — ein stummer Sensor kann fast immer bis zum Morgen warten.
+Tipp: Füge der Szene eine Zeitbedingung hinzu, wenn du nachts nicht geweckt
+werden möchtest — ein stummer Sensor kann fast immer bis zum Morgen warten.
 
 ## Die Szenenaktionen
 
@@ -322,7 +322,7 @@ einfügen.
 - **Stumme Zigbee-Geräte abrufen** — liefert die **Anzahl** der stummen Geräte,
   ihre **Namen** und die Anzahl der überwachten Geräte. Ein Filter beschränkt die
   Zählung auf batterie- oder netzbetriebene Geräte. Beispiel: eine Szene jeden
-  Morgen um 8 Uhr, die Ihnen die Liste des Tages schickt.
+  Morgen um 8 Uhr, die dir die Liste des Tages schickt.
 - **Ein Zigbee-Gerät prüfen** — liefert für ein gewähltes Gerät, ob es
   **lebendig** ist, seit wie vielen Minuten es stumm ist und seinen
   Schwellenwert. Beispiel: vor dem Urlaub prüfen, ob der Rauchmelder noch
@@ -345,12 +345,12 @@ weiter), statt einen falschen Wert zu liefern.
 ## Gut zu wissen
 
 - **Geräte werden über ihre IEEE-Adresse erkannt**, nicht über ihren Namen. Wenn
-  Sie ein Gerät in Zigbee2MQTT umbenennen, wird sein Name in Gladys aktualisiert,
+  du ein Gerät in Zigbee2MQTT umbenennst, wird sein Name in Gladys aktualisiert,
   ohne dass sein Verlauf verloren geht.
 - **In Zigbee2MQTT deaktivierte Geräte werden** standardmäßig **nicht überwacht**:
   Sie sollen ja stumm sein. Eine Option erlaubt es, sie einzubeziehen.
 - **Der Koordinator (der USB-Stick) wird nicht überwacht**: Er ist kein Gerät, das
-  von selbst ausfallen kann. Verwenden Sie dafür die Funktion _Zigbee2MQTT bridge
+  von selbst ausfallen kann. Verwende dafür die Funktion _Zigbee2MQTT bridge
   online_.
 - **Der Verlauf der letzten Lebenszeichen wird gespeichert**, im Volume `/data` der
   Integration, zusammen mit dem letzten bekannten Zustand jedes Geräts (damit die
@@ -358,12 +358,12 @@ weiter), statt einen falschen Wert zu liefern.
   Containers setzt daher nicht alle Geräte zurück — sonst würde ein Sensor, der
   vor einem Monat ausgefallen ist, einen neuen Schwellenwert beginnen, und die
   Warnung würde nie auslösen.
-- **Wenn Sie von einer Version aktualisieren, die die Signalstärke
+- **Wenn du von einer Version aktualisierst, die die Signalstärke
   veröffentlichte**, behalten die bereits in Gladys erstellten Geräte diese
-  Funktion: Eine Integration kann einem von Ihnen erstellten Gerät keine Funktion
+  Funktion: Eine Integration kann einem von dir erstellten Gerät keine Funktion
   entfernen. Sie erhält keine Werte mehr und bleibt auf dem letzten eingefroren.
-  Um sie loszuwerden, löschen Sie das Gerät in Gladys und erstellen Sie es über
-  **Entdecken** neu (sein Verlauf geht dann verloren); andernfalls ignorieren Sie
+  Um sie loszuwerden, lösche das Gerät in Gladys und erstelle es über
+  **Entdecken** neu (sein Verlauf geht dann verloren); andernfalls ignoriere
   sie einfach.
 - **Ein Gerät, von dem nie etwas gehört wurde**, erhält ab dem Start des Monitors
   einen vollen Schwellenwert, bevor es markiert wird. Eine frisch installierte
@@ -382,35 +382,35 @@ weiter), statt einen falschen Wert zu liefern.
 
 ## Fehlerbehebung
 
-**Die Test-Schaltfläche meldet, dass keine Verbindung besteht.** Prüfen Sie die URL
+**Die Test-Schaltfläche meldet, dass keine Verbindung besteht.** Prüfe die URL
 (mit dem Port, standardmäßig `1883`), die Zugangsdaten und ob der Broker
 Verbindungen vom Gladys-Rechner annimmt. In die URL geschriebene Zugangsdaten
 (`mqtt://user:pass@host`) funktionieren, werden in den Meldungen und Protokollen
 aber als `***` angezeigt.
 
-**Die Test-Schaltfläche erwähnt ein selbstsigniertes Zertifikat.** Ihr
-`mqtts://`-Broker verwendet ein Zertifikat, dem Node nicht vertraut: Fügen Sie
+**Die Test-Schaltfläche erwähnt ein selbstsigniertes Zertifikat.** Dein
+`mqtts://`-Broker verwendet ein Zertifikat, dem Node nicht vertraut: Füge
 seine Zertifizierungsstelle unter **CA-Zertifikat (PEM)** (Abschnitt TLS) ein.
 
 **Die Verbindung steht, aber es wird kein Gerät erkannt.** Das Basis-Topic stimmt
-wahrscheinlich nicht mit dem von Zigbee2MQTT verwendeten überein. Vergleichen Sie
-es mit `mqtt.base_topic` in Ihrer `configuration.yaml`.
+wahrscheinlich nicht mit dem von Zigbee2MQTT verwendeten überein. Vergleiche
+es mit `mqtt.base_topic` in deiner `configuration.yaml`.
 
 **Ein Gerät wird als stumm markiert, obwohl es einwandfrei funktioniert.** Sein
-Schwellenwert ist zu knapp: Sehen Sie sich seine Funktion _Silence_ (_Dauer (ganze
-Zahl)_) an, um seinen tatsächlichen Rhythmus kennenzulernen, und geben Sie ihm
+Schwellenwert ist zu knapp: Sieh dir seine Funktion _Silence_ (_Dauer (ganze
+Zahl)_) an, um seinen tatsächlichen Rhythmus kennenzulernen, und gib ihm
 dann einen eigenen Schwellenwert. Tür-, Wasser- und Tastensensoren sind
 typischerweise tagelang stumm, wenn nichts passiert.
 
-**Alle Geräte verstummen gleichzeitig.** Prüfen Sie zuerst _Zigbee2MQTT bridge
+**Alle Geräte verstummen gleichzeitig.** Prüfe zuerst _Zigbee2MQTT bridge
 online_: Höchstwahrscheinlich ist Zigbee2MQTT selbst, der Broker oder der
-Koordinator ausgefallen, nicht Ihre Sensoren.
+Koordinator ausgefallen, nicht deine Sensoren.
 
 **Ein gerade hinzugefügtes Gerät zeigt „Kein aktueller Wert“.** Eine Funktion
 erhält erst einen Wert, wenn das Gerät in Gladys existiert; alles, was
-veröffentlicht wurde, bevor Sie auf _Zu Gladys hinzufügen_ geklickt haben, ging
+veröffentlicht wurde, bevor du auf _Zu Gladys hinzufügen_ geklickt hast, ging
 ins Leere. Die Integration veröffentlicht die Zustände eines Geräts erneut, sobald
 Gladys ihr mitteilt, dass das Gerät erstellt wurde, sodass der Wert innerhalb
-weniger Sekunden ankommt. Ist das Etikett immer noch da, **laden Sie die Seite
+weniger Sekunden ankommt. Ist das Etikett immer noch da, **lade die Seite
 neu**: Das Dashboard berechnet das Etikett „Kein aktueller Wert“ beim Laden seiner
 Daten und entfernt es bei den folgenden Live-Aktualisierungen nicht.

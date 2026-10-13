@@ -47,7 +47,7 @@ export function buildNetworkHealthWidget(snapshot, settings = {}) {
           text: {
             en: 'Waiting for the Zigbee2MQTT device inventory. Check the MQTT connection from the integration page if this lasts.',
             fr: "En attente de l'inventaire des appareils Zigbee2MQTT. Vérifiez la connexion MQTT depuis la page de l'intégration si cela dure.",
-            de: 'Warten auf das Geräteinventar von Zigbee2MQTT. Prüfen Sie die MQTT-Verbindung auf der Seite der Integration, falls dies anhält.',
+            de: 'Warten auf das Geräteinventar von Zigbee2MQTT. Prüfe die MQTT-Verbindung auf der Seite der Integration, falls dies anhält.',
             es: 'Esperando el inventario de dispositivos de Zigbee2MQTT. Si esto se prolonga, compruebe la conexión MQTT desde la página de la integración.',
           },
         },

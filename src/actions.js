@@ -35,7 +35,7 @@ export function testConnection({ mqtt, monitor, config }) {
     return {
       en: 'The monitor is not started yet, try again in a few seconds.',
       fr: "Le moniteur n'est pas encore démarré, réessayez dans quelques secondes.",
-      de: 'Der Monitor ist noch nicht gestartet, versuchen Sie es in ein paar Sekunden erneut.',
+      de: 'Der Monitor ist noch nicht gestartet, versuche es in ein paar Sekunden erneut.',
       es: 'El monitor aún no se ha iniciado, vuelva a intentarlo en unos segundos.',
     };
   }
@@ -47,7 +47,7 @@ export function testConnection({ mqtt, monitor, config }) {
     return {
       en: `Not connected to ${url}${reason}. Check the URL, the credentials and that the broker is reachable from Gladys.`,
       fr: `Non connecté à ${url}${reason}. Vérifiez l'URL, les identifiants et que le broker est joignable depuis Gladys.`,
-      de: `Nicht verbunden mit ${url}${reason}. Prüfen Sie die URL, die Zugangsdaten und ob der Broker von Gladys aus erreichbar ist.`,
+      de: `Nicht verbunden mit ${url}${reason}. Prüfe die URL, die Zugangsdaten und ob der Broker von Gladys aus erreichbar ist.`,
       es: `No conectado a ${url}${reason}. Compruebe la URL, las credenciales y que el broker sea accesible desde Gladys.`,
     };
   }
@@ -57,7 +57,7 @@ export function testConnection({ mqtt, monitor, config }) {
     return {
       en: `Connected to ${url}, but nothing was received on ${config.base_topic}/bridge/devices. Check the base topic configured in Zigbee2MQTT.`,
       fr: `Connecté à ${url}, mais rien reçu sur ${config.base_topic}/bridge/devices. Vérifiez le topic de base configuré dans Zigbee2MQTT.`,
-      de: `Verbunden mit ${url}, aber nichts auf ${config.base_topic}/bridge/devices empfangen. Prüfen Sie das in Zigbee2MQTT konfigurierte Basis-Topic.`,
+      de: `Verbunden mit ${url}, aber nichts auf ${config.base_topic}/bridge/devices empfangen. Prüfe das in Zigbee2MQTT konfigurierte Basis-Topic.`,
       es: `Conectado a ${url}, pero no se ha recibido nada en ${config.base_topic}/bridge/devices. Compruebe el topic base configurado en Zigbee2MQTT.`,
     };
   }
