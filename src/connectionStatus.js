@@ -23,7 +23,7 @@ import { redactBrokerUrl } from './config.js';
 // is probably wrong.
 export const INVENTORY_GRACE_MS = 30 * 1000;
 
-/** @typedef {{connected: boolean, message?: {en: string, fr: string}}} ConnectionStatus */
+/** @typedef {{connected: boolean, message?: import('./format.js').LocalizedText}} ConnectionStatus */
 
 /**
  * Decide what to report as the application-level status.
@@ -44,6 +44,8 @@ export function buildConnectionStatus({ mqtt, monitor, config, mqttStartedAt, no
       message: {
         en: `Cannot reach the MQTT broker at ${url}${reason}.`,
         fr: `Broker MQTT injoignable sur ${url}${reason}.`,
+        de: `MQTT-Broker unter ${url}${reason} nicht erreichbar.`,
+        es: `No se puede acceder al broker MQTT en ${url}${reason}.`,
       },
     };
   }
@@ -54,6 +56,8 @@ export function buildConnectionStatus({ mqtt, monitor, config, mqttStartedAt, no
       message: {
         en: `Connected, but nothing on ${config.base_topic}/bridge/devices. Check the Zigbee2MQTT base topic.`,
         fr: `Connecté, mais rien sur ${config.base_topic}/bridge/devices. Vérifiez le topic de base de Zigbee2MQTT.`,
+        de: `Verbunden, aber nichts auf ${config.base_topic}/bridge/devices. Prüfe das Basis-Topic von Zigbee2MQTT.`,
+        es: `Conectado, pero nada en ${config.base_topic}/bridge/devices. Compruebe el topic base de Zigbee2MQTT.`,
       },
     };
   }
@@ -66,6 +70,8 @@ export const INITIALIZATION_FAILED_STATUS = {
   message: {
     en: 'Initialization failed, check the integration logs.',
     fr: "L'initialisation a échoué, consultez les logs de l'intégration.",
+    de: 'Die Initialisierung ist fehlgeschlagen, sieh in den Protokollen der Integration nach.',
+    es: 'La inicialización ha fallado, consulte los registros de la integración.',
   },
 };
 

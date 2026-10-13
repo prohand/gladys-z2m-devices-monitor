@@ -7,7 +7,8 @@ Built on the official
 [JavaScript integration template](https://github.com/GladysAssistant/integration-template-js)
 and the [`@gladysassistant/integration-sdk`](https://github.com/GladysAssistant/integration-sdk-js).
 
-> User documentation: [English](docs/en.md) · [Français](docs/fr.md)
+> User documentation: [English](docs/en.md) · [Français](docs/fr.md) · [Deutsch](docs/de.md) ·
+> [Español](docs/es.md)
 >
 > Requires **Gladys ≥ 5.1.0**: the manifest declares a dashboard widget and scene
 > blocks (and its catalog category, `network`), fields older cores reject
@@ -110,7 +111,7 @@ The user documentation lists both names side by side.
 │  └─ z2m/
 │     ├─ topics.js                   # Zigbee2MQTT topic parsing
 │     └─ payloads.js                 # Zigbee2MQTT payload parsing
-├─ docs/en.md, docs/fr.md            # user documentation (mandatory, re-hosted by Gladys)
+├─ docs/{en,fr,de,es}.md             # user documentation (re-hosted by Gladys)
 ├─ gladys-assistant-integration.json # manifest (name, config schema, image…)
 ├─ Dockerfile                        # Node 24 Alpine, read-only rootfs ready
 └─ .github/workflows/                # CI, multi-arch build, UI-driven release

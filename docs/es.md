@@ -1,0 +1,406 @@
+# Z2M Devices Monitor — documentación
+
+Esta integración vigila sus dispositivos Zigbee2MQTT y le avisa cuando uno de
+ellos **deja de dar señales de vida**.
+
+## Por qué no el nivel de batería
+
+El porcentaje de batería que informa un dispositivo Zigbee es una estimación
+aproximada, que rara vez se actualiza y a menudo es simplemente errónea: un
+sensor con una pila CR2032 suele marcar 100 % hasta el día en que deja de
+responder. Y sobre todo, la batería no dice nada de las otras formas en que un
+dispositivo muere: desenchufado, fuera de la red, con la ruta perdida o con el
+router padre caído.
+
+Un dispositivo Zigbee vivo **habla**. Los sensores envían sus mediciones, los
+routers responden, todo se manifiesta al menos periódicamente. Así que el único
+hecho fiable es _¿cuándo supe de este dispositivo por última vez?_ — y la única
+pregunta útil es _¿lleva en silencio más tiempo del que debería?_
+
+Eso es exactamente lo que hace esta integración.
+
+## Qué hace
+
+Se suscribe a todo lo que Zigbee2MQTT publica en su broker MQTT
+(`zigbee2mqtt/#`), recuerda cuándo se manifestó cada dispositivo por última vez y
+reevalúa continuamente su silencio.
+
+**Nunca** publica nada en su red Zigbee: solo escucha. Además distingue entre:
+
+- un mensaje publicado **por** el dispositivo → prueba de que está vivo;
+- un mensaje reenviado por el broker (el indicador _retained_, en cada
+  reconexión) → puede tener días de antigüedad, no prueba nada;
+- un comando `set`/`get` enviado **al** dispositivo por Gladys, Home Assistant o
+  una escena → no es el dispositivo el que habla. Sin esa distinción, un sensor
+  muerto parecería vivo mientras algo siguiera hablándole.
+
+Si ha activado la opción `advanced.last_seen` en Zigbee2MQTT, la integración
+utiliza la marca de tiempo que los dispositivos adjuntan a sus informes: la fuente
+más fiable que existe, y la que incluso hace aprovechables los mensajes
+_retained_. No es obligatoria.
+
+## Instalación
+
+### 1. Requisitos
+
+- Gladys **5.1.0 o posterior** (widget y bloques de escena);
+- Zigbee2MQTT en funcionamiento y publicando en un broker MQTT;
+- ese broker accesible desde Gladys (misma red local).
+
+### 2. Configuración
+
+| Campo                                   | Qué introducir                                                                                                                                                                                                                         |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **URL del broker**                      | La dirección de su broker MQTT, por ejemplo `mqtt://192.168.1.10:1883`. También se admiten los esquemas `mqtts://`, `ws://` y `wss://`. Escribir solo la dirección (`192.168.1.10:1884`) funciona: `mqtt://` se añade automáticamente. |
+| **Nombre de usuario / Contraseña**      | Déjelos vacíos si su broker admite conexiones anónimas.                                                                                                                                                                                |
+| **Topic base**                          | El `mqtt.base_topic` configurado en Zigbee2MQTT. `zigbee2mqtt` en casi todos los casos.                                                                                                                                                |
+| **Certificado de la CA (PEM)**          | Solo para `mqtts://` o `wss://` con un certificado autofirmado o una autoridad privada: pegue el certificado de esa autoridad (o el autofirmado del propio broker). Puede pegarlo en una sola línea.                                   |
+| **Verificar el certificado del broker** | Activado por defecto. Desactivarlo acepta cualquier certificado, incluido el de un equipo que se haga pasar por su broker. Es preferible usar el certificado anterior.                                                                 |
+
+Después pulse **Probar la conexión MQTT**: el botón indica si está conectado,
+cuántos dispositivos ve y cuántos mensajes ha recibido. Es la forma más rápida de
+detectar el error clásico: broker correcto, topic base incorrecto, y no pasa
+absolutamente nada.
+
+#### Dónde encontrar esos tres valores
+
+**Hay que escribirlos a mano: la integración no puede leerlos de Gladys por sí
+misma.** Una integración externa se ejecuta en su propio contenedor y Gladys solo
+le entrega su _propia_ configuración; la API que Gladys le expone no da acceso a
+los ajustes ni a las variables de otra integración. Es una propiedad deliberada
+del entorno aislado, no un descuido: sin ella, cualquier integración de la tienda
+podría leer las credenciales de sus otros servicios.
+
+Aun así, copiarlos es rápido:
+
+- **si Gladys instaló Zigbee2MQTT por usted** (modo «Instalación desde Gladys»),
+  el broker es el contenedor Mosquitto que gestiona Gladys. Abra la integración
+  **Zigbee2MQTT** → pestaña **Configuración** → bloque **«Conexión de herramientas
+  externas»**: Gladys muestra ahí la URL, el nombre de usuario y la contraseña, con
+  un botón para copiarlos. La contraseña se genera al azar en la primera
+  activación, así que no hay ningún valor «por defecto» que adivinar. Ese broker
+  escucha en el puerto **1884** y la URL mostrada apunta a `localhost`:
+  **sustituya `localhost` por la dirección IP de su equipo Gladys**, porque de lo
+  contrario `localhost` designaría el propio contenedor de esta integración. El
+  topic base es `zigbee2mqtt`;
+- **si usa su propio broker** (Zigbee2MQTT independiente, Mosquitto, Home
+  Assistant…), simplemente reutilice la URL y las credenciales que usa el propio
+  Zigbee2MQTT: el bloque `mqtt:` de su `configuration.yaml`.
+
+### 3. Añadir los dispositivos
+
+Abra la pestaña **Descubrir** de la integración y añada los dispositivos que
+desee vigilar con **Añadir a Gladys**. Encontrará:
+
+- un dispositivo **por cada dispositivo Zigbee** que conoce Zigbee2MQTT;
+- un dispositivo **Zigbee2MQTT monitor** que resume toda la red.
+
+Los dispositivos vigilados llevan su nombre de Zigbee2MQTT **seguido de un
+sufijo**, `(monitor)` por defecto: `office plug (monitor)`. Sin él sería imposible
+distinguirlos de los dispositivos que Gladys ya expone con el mismo nombre a
+través de su propia integración Zigbee2MQTT: un selector de escena mostraría
+«office plug» dos veces. Cámbielo (o vacíelo) en **Nombre de los dispositivos**.
+Solo se aplica a los dispositivos que cree después: Gladys nunca renombra un
+dispositivo ya añadido; renómbrelo usted mismo en su página.
+
+### ¿Qué ocurre cuando cambia la red Zigbee?
+
+La integración vuelve a leer continuamente el inventario de Zigbee2MQTT, así que
+la pantalla **Descubrir** se actualiza sola:
+
+- **un dispositivo que acaba de vincular** aparece en la lista en pocos segundos,
+  sin reiniciar y sin pulsar nada. Crearlo en Gladys sigue siendo **manual**, eso
+  sí: usted decide qué entra en su instalación. Por eso la escena que conviene
+  crear es la del dispositivo **Zigbee2MQTT monitor**: sus contadores cubren todos
+  los dispositivos que conoce Zigbee2MQTT, incluidos los que nunca ha creado en
+  Gladys, de modo que un dispositivo recién vinculado queda cubierto por la alerta
+  desde el momento en que se une;
+- **un dispositivo eliminado de Zigbee2MQTT** desaparece de la pantalla
+  **Descubrir**, deja de contarse y de publicar valores. Si ya lo había creado en
+  Gladys, su dispositivo **no se elimina automáticamente**: permanece, congelado
+  en su último valor. Una integración no tiene permitido eliminar sus
+  dispositivos: elimínelo desde **Dispositivos** cuando quiera.
+
+## Umbrales de silencio
+
+Un dispositivo se declara muerto en cuanto lleva en silencio más tiempo que su
+umbral. Dos valores por defecto:
+
+- **dispositivos conectados a la red eléctrica** (enchufes, bombillas, routers):
+  120 minutos, informan a menudo;
+- **dispositivos a pilas** (sensores): 1440 minutos, es decir 24 horas — duermen
+  la mayor parte del tiempo.
+
+Puede ajustarlo dispositivo por dispositivo en el campo **Umbrales por
+dispositivo**, un par `dispositivo=minutos` por línea o separados por comas:
+
+```
+mailbox sensor=4320
+garage motion=180
+0x00158d0001abcdef=60
+```
+
+El dispositivo se designa por su nombre descriptivo (friendly name) de
+Zigbee2MQTT o por su dirección IEEE.
+
+**Empiece con holgura.** Un umbral demasiado ajustado produce falsas alertas, y
+una alerta en la que ya nadie cree no sirve de nada. Déjelo funcionar unos días,
+mire el valor «Silence» en la pantalla de cada dispositivo (Gladys lo muestra como
+_Duración (entero)_) y luego ajuste.
+
+## Qué expone cada dispositivo
+
+Cada dispositivo vigilado expone **2 funciones**:
+
+| Función     | Nombre mostrado por Gladys | Descripción                                                                                                                                                                     |
+| ----------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Alive**   | _Estado de la entrada_     | Encendido = el dispositivo da señales de vida, Apagado = lleva en silencio más tiempo que su umbral. Es la función sobre la que construir una alerta. Su historial se conserva. |
+| **Silence** | _Duración (entero)_        | Cuántos minutos lleva callado el dispositivo. Útil para dimensionar los umbrales.                                                                                               |
+
+Si añadió sus dispositivos con la versión 1.0.1 o anterior, su función **Alive**
+se publicó en otra categoría, que las pantallas de Gladys dibujan como una
+etiqueta vacía: parece que el dispositivo solo lleva **Silence**. La pantalla
+**Descubrir** ofrece un botón **Actualizar** en cada uno de esos dispositivos:
+púlselo y la función vuelve, historial incluido.
+
+El dispositivo **Zigbee2MQTT monitor** expone **5 funciones**:
+
+| Función                       | Nombre mostrado por Gladys | Descripción                                                                                                                                     |
+| ----------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Silent devices**            | _Silent devices_           | Cuántos dispositivos están en silencio ahora mismo. Es el disparador de la alerta.                                                              |
+| **Silent device names**       | _Texto_                    | Sus nombres, para que una notificación pueda citarlos. Muestra «No silent device» mientras toda la red responde (modificable, véase más abajo). |
+| **Devices alive**             | _Devices alive_            | Cuántos dispositivos responden.                                                                                                                 |
+| **Devices monitored**         | _Devices monitored_        | Cuántos dispositivos se vigilan.                                                                                                                |
+| **Zigbee2MQTT bridge online** | _Estado de la entrada_     | El estado del propio bridge de Zigbee2MQTT.                                                                                                     |
+
+### Por qué algunos nombres cambian en pantalla
+
+Gladys no siempre muestra el nombre que la integración dio a una función. Cuando
+una función es **la única de su tipo en su dispositivo**, la interfaz muestra en
+su lugar la etiqueta estándar de su categoría: de ahí _Texto_ para «Silent device
+names», _Estado de la entrada_ para «Alive» y para «Zigbee2MQTT bridge online», o
+_Contador (entero)_ en la pantalla de edición del dispositivo. Los tres contadores
+del monitor comparten el mismo tipo, así que conservan sus nombres.
+
+Es un comportamiento de Gladys, no un ajuste de esta integración. Dos
+consecuencias prácticas:
+
+- en un selector de escena, busque el nombre mostrado («Zigbee2MQTT monitor
+  (Texto)» = los nombres de los dispositivos en silencio);
+- puede renombrar una función desde la página del dispositivo si la etiqueta
+  estándar no le dice nada.
+
+### El texto que se muestra cuando todo va bien
+
+«Silent device names» es una función de texto y pasa la mayor parte del tiempo sin
+nombrar a nadie, lo cual es una buena noticia. Entonces muestra una frase
+explícita en lugar de un guion: **No silent device** por defecto. El campo
+**Texto mostrado cuando ningún dispositivo está en silencio** (sección
+_Dispositivo «Zigbee2MQTT monitor»_) le permite traducirlo. Vacíe el campo para
+restablecer el valor por defecto: este texto nunca puede estar vacío, Gladys no
+guarda un estado de texto vacío.
+
+### ¿Y la intensidad de la señal?
+
+Esta integración **no** la publica: la integración Zigbee2MQTT de Gladys ya
+informa del LQI de cada dispositivo, y una segunda copia del mismo número solo
+saturaría las listas de dispositivos y los selectores de escena.
+
+## El widget del panel
+
+En **Panel → Editar → Nuevo widget**, añada el widget **Salud Zigbee**. De un
+vistazo muestra:
+
+- tres contadores: dispositivos **en silencio**, **vivos** y **vigilados**;
+- el estado del **bridge de Zigbee2MQTT**;
+- la lista de dispositivos en silencio, con el tiempo que lleva callado cada uno
+  (o «nunca visto»). A partir de 9 dispositivos, la última fila indica cuántos
+  otros están en silencio.
+
+Funciona **justo después de la instalación**, sin crear ni un solo dispositivo en
+Gladys. El ajuste **Dispositivos mostrados** lo limita a los dispositivos a pilas
+o conectados a la red: práctico para dos widgets uno al lado del otro. El widget
+se actualiza solo cada minuto, e inmediatamente cuando un dispositivo se queda en
+silencio o vuelve.
+
+## Recibir la alerta: la escena
+
+La integración da la voz de alarma, Gladys envía la alerta.
+
+### Con el activador de la integración (recomendado)
+
+1. **Escenas → Nueva escena**;
+2. activador: en la categoría **Integraciones**, elija **Un dispositivo Zigbee se
+   ha quedado en silencio**. Deje los filtros vacíos para cubrir toda la red,
+   incluidos los dispositivos vinculados más adelante, o elija un
+   **Dispositivo** y/o una **Alimentación** (pilas, red eléctrica);
+3. acción: **Enviar mensaje** con algo como:
+
+   > {{triggerEvent.data.device_name}} no da señales de vida desde hace
+   > {{triggerEvent.data.silence_minutes}} minutos.
+
+   Escriba `{{` en el mensaje para elegir las variables de la lista.
+
+Eso es todo: no hace falta ningún bloque «Obtener valor del dispositivo». Las
+variables disponibles:
+
+| Variable            | Contenido                                |
+| ------------------- | ---------------------------------------- |
+| `device_name`       | el nombre del dispositivo en Zigbee2MQTT |
+| `silence_minutes`   | cuántos minutos lleva callado            |
+| `threshold_minutes` | su umbral de silencio                    |
+| `power_source`      | `battery` o `mains`                      |
+| `ieee_address`      | su dirección IEEE                        |
+
+Conviene saber sobre este activador:
+
+- **una alerta por dispositivo**: si un segundo sensor muere mientras el primero
+  sigue en silencio, recibe una segunda alerta, algo que la escena del contador
+  de más abajo no hace;
+- **ninguna avalancha cuando el propio Zigbee2MQTT cae**: mientras el broker es
+  inaccesible o el bridge está desconectado, no se anuncia ningún dispositivo
+  (todos están en silencio por la misma razón). Cuando la red vuelve, cada
+  dispositivo que seguía respondiendo al comenzar la caída dispone de un umbral
+  completo para volver a hablar: un enchufe que informa cada cinco minutos no se
+  anuncia entonces «en silencio» y luego «de vuelta» un minuto después. Solo se
+  anuncian los que siguen callados después de eso. Un reinicio de la integración
+  cuenta como una caída;
+- **ninguna alerta al instalar o actualizar** para los dispositivos que ya
+  estaban en silencio: solo cuenta un _cambio_ de vivo a en silencio. Esa memoria
+  sobrevive a los reinicios;
+- el activador **Un dispositivo Zigbee vuelve a dar señales de vida** funciona
+  igual, para decir «falsa alarma, ha vuelto».
+
+### Con el dispositivo Zigbee2MQTT monitor
+
+El método anterior, todavía válido. Se activa una vez, cuando el número de
+dispositivos en silencio supera cero.
+
+1. **Escenas → Nueva escena**;
+2. activador: **Cambio de estado del dispositivo** → dispositivo _Zigbee2MQTT
+   monitor_, función **Silent devices**, condición _superior_ a `0`;
+3. primera acción: **Obtener valor del dispositivo** → en _Seleccione un
+   dispositivo_, elija **Zigbee2MQTT monitor (Texto)**, es decir, la función
+   **Silent device names**.
+
+   Este es el paso que todo el mundo olvida: en Gladys un mensaje solo puede
+   insertar valores obtenidos por una acción situada **antes** que él. Sin este
+   bloque, el selector de variables del mensaje está vacío y la alerta no puede
+   nombrar los sensores afectados;
+
+4. segunda acción: **Enviar mensaje** (notificación móvil, Telegram…) con algo
+   como:
+
+   > Dispositivo(s) Zigbee sin señales de vida: _Último valor del dispositivo_
+
+   Para insertar esa variable, escriba `{{` donde la quiera en el mensaje: Gladys
+   le ofrece entonces el valor obtenido en el paso 3, mostrado como «1.1. Último
+   valor del dispositivo» (el número es la posición de la acción _Obtener valor
+   del dispositivo_ en la escena). Pase siempre por ese selector en lugar de
+   escribir la variable a mano: el mensaje nombrará los sensores afectados en
+   lugar de limitarse a decir que algo va mal.
+
+Para un sensor especialmente crítico (detector de humo, alarma, congelador),
+añada una escena dedicada a su función **Alive** cuando pase a Apagado (en el
+selector: _nombre del dispositivo (Estado de la entrada)_).
+
+Consejo: añada una condición horaria a la escena si prefiere no despertarse de
+noche; un sensor en silencio casi siempre puede esperar hasta la mañana.
+
+## Las acciones de escena
+
+La integración añade dos bloques en la categoría **Integraciones** de las
+acciones de escena. Sus resultados pueden insertarse en las acciones siguientes
+con `{{`.
+
+- **Obtener los dispositivos Zigbee en silencio**: devuelve el **número** de
+  dispositivos en silencio, sus **nombres** y el número de dispositivos
+  vigilados. Un filtro limita el recuento a los dispositivos a pilas o conectados
+  a la red. Ejemplo: una escena cada mañana a las 8 que le envía la lista del día.
+- **Comprobar un dispositivo Zigbee**: para un dispositivo elegido, devuelve si
+  está **vivo**, cuántos minutos lleva callado y su umbral. Ejemplo: antes de
+  irse de vacaciones, comprobar que el detector de humo sigue respondiendo. El
+  dispositivo debe haberse añadido a Gladys para aparecer en la lista.
+
+Si todavía no se ha recibido el inventario de Zigbee2MQTT, o el dispositivo ya no
+se vigila, la acción falla (la escena lo registra y continúa) en lugar de
+devolver un valor erróneo.
+
+## Los botones de la pestaña Configuración
+
+- **Probar la conexión MQTT**: el estado actual de la conexión, cuántos
+  dispositivos se vigilan, cuántos mensajes se han recibido y, en caso de fallo,
+  el motivo exacto.
+- **Listar los dispositivos en silencio**: quién está callado y desde cuándo.
+- **Actualizar la lista de dispositivos**: vuelve a publicar la lista en Gladys,
+  tras una vinculación o un cambio de nombre en Zigbee2MQTT.
+
+## Conviene saber
+
+- **Los dispositivos se identifican por su dirección IEEE**, no por su nombre.
+  Renombrar un dispositivo en Zigbee2MQTT actualiza su nombre en Gladys sin
+  perder su historial.
+- **Los dispositivos desactivados en Zigbee2MQTT no se vigilan** por defecto: se
+  supone que están en silencio. Una opción permite incluirlos.
+- **El coordinador (la llave USB) no se vigila**: no es un dispositivo que pueda
+  caerse por sí solo. Para eso, utilice la función _Zigbee2MQTT bridge online_.
+- **El historial de últimas señales de vida se conserva** en el volumen `/data`
+  de la integración, junto con el último estado conocido de cada dispositivo
+  (para que los activadores de escena no vuelvan a dispararse en cada reinicio).
+  Por tanto, un reinicio del contenedor no pone a cero todos los dispositivos: de
+  lo contrario, un sensor que murió hace un mes empezaría un umbral nuevo y la
+  alerta nunca se dispararía.
+- **Si actualiza desde una versión que publicaba la intensidad de la señal**, los
+  dispositivos que ya creó en Gladys conservan esa función: una integración no
+  puede quitar una función a un dispositivo que usted creó. Deja de recibir
+  valores y se queda congelada en el último. Para deshacerse de ella, elimine el
+  dispositivo en Gladys y vuelva a crearlo desde **Descubrir** (su historial se
+  pierde entonces); si no, simplemente ignórela.
+- **Un dispositivo del que nunca se ha sabido nada** dispone de un umbral
+  completo desde el arranque del monitor antes de ser señalado. Una integración
+  recién instalada no declara muerta toda la red en su primer minuto.
+- **Tras una caída** (broker inaccesible, bridge desconectado, integración
+  detenida), un dispositivo que respondía al comenzar la caída dispone de un
+  umbral completo, contado desde que vuelve la red, antes de declararse en
+  silencio. Su función _Silence_ sigue mostrando el tiempo real desde su último
+  mensaje. Un dispositivo que ya estaba en silencio antes de la caída sigue en
+  silencio. El precio: un dispositivo que murió realmente durante la caída se
+  señala más tarde de lo habitual, como máximo con el retraso de la duración de
+  la caída, en lugar de que todos los dispositivos conectados a la red se señalen
+  en silencio y luego de vuelta al final de un único fallo.
+- **Los grupos de Zigbee2MQTT se ignoran**: publican bajo el mismo topic que los
+  dispositivos, pero no son dispositivos.
+
+## Solución de problemas
+
+**El botón de prueba indica que no está conectado.** Compruebe la URL (con el
+puerto, `1883` por defecto), las credenciales y que el broker acepta conexiones
+desde el equipo Gladys. Las credenciales escritas en la URL
+(`mqtt://user:pass@host`) funcionan, pero se muestran como `***` en los mensajes y
+los registros.
+
+**El botón de prueba menciona un certificado autofirmado.** Su broker `mqtts://`
+utiliza un certificado en el que Node no confía: pegue su autoridad de
+certificación en **Certificado de la CA (PEM)** (sección TLS).
+
+**Está conectado, pero no ve ningún dispositivo.** Probablemente el topic base no
+coincide con el que usa Zigbee2MQTT. Compárelo con `mqtt.base_topic` en su
+`configuration.yaml`.
+
+**Un dispositivo aparece en silencio aunque funciona bien.** Su umbral es
+demasiado ajustado: mire su función _Silence_ (_Duración (entero)_) para conocer
+su ritmo real y después asígnele un umbral personalizado. Los sensores de puerta,
+de fugas y los botones suelen pasar días callados cuando no ocurre nada.
+
+**Todos los dispositivos se quedan en silencio a la vez.** Compruebe primero
+_Zigbee2MQTT bridge online_: lo más probable es que haya caído el propio
+Zigbee2MQTT, el broker o el coordinador, no sus sensores.
+
+**Un dispositivo que acabo de añadir muestra «Sin valor reciente».** Una función
+solo recibe un valor una vez que el dispositivo existe en Gladys, así que todo lo
+publicado antes de pulsar _Añadir a Gladys_ se perdió. La integración vuelve a
+publicar los estados de un dispositivo en cuanto Gladys le indica que el
+dispositivo se ha creado, así que el valor llega en un par de segundos. Si la
+etiqueta sigue ahí, **recargue la página**: el panel calcula la etiqueta «Sin
+valor reciente» al cargar sus datos y no la quita con las actualizaciones en
+directo posteriores.

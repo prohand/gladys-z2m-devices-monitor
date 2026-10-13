@@ -18,6 +18,7 @@ import {
   getDeviceStatus,
   getSilentDevices,
 } from '../src/scenes.js';
+import { LANGUAGES } from '../src/format.js';
 import { WIDGET } from '../src/widget.js';
 import { parseBridgeDevices } from '../src/z2m/payloads.js';
 import { createFakeGladys } from './helpers/fakeGladys.js';
@@ -230,6 +231,9 @@ test('the manifest carries what the store indexer requires', () => {
   assert.equal(manifest.manifest_version, 1);
   assert.equal(manifest.type, 'device');
   assert.ok(manifest.name.length >= 3 && manifest.name.length <= 30);
+  for (const language of LANGUAGES) {
+    assert.ok(manifest.description[language], `missing catalog description.${language}`);
+  }
   for (const [language, text] of Object.entries(manifest.description)) {
     assert.ok(
       text.length >= 10 && text.length <= 100,
@@ -241,7 +245,7 @@ test('the manifest carries what the store indexer requires', () => {
   assert.match(manifest.cover_image, /^https:\/\//);
 });
 
-test('every user-facing string is translated', () => {
+test('every user-facing string is written in the four languages of Gladys', () => {
   const texts = [manifest.description];
   for (const field of manifest.config_schema) {
     texts.push(field.label, field.description, field.placeholder);
@@ -268,8 +272,23 @@ test('every user-facing string is translated', () => {
     }
   }
   for (const text of texts.filter(Boolean)) {
-    assert.ok(text.en, `missing English text in ${JSON.stringify(text)}`);
-    assert.ok(text.fr, `missing French text in ${JSON.stringify(text)}`);
+    for (const language of LANGUAGES) {
+      assert.ok(text[language], `missing "${language}" text in ${JSON.stringify(text)}`);
+    }
+  }
+});
+
+// The store checks these bounds in every language, not only in English.
+test('widget labels and descriptions fit the store bounds in every language', () => {
+  for (const widget of manifest.widgets) {
+    for (const language of LANGUAGES) {
+      const label = widget.label[language];
+      assert.ok(label.length >= 3 && label.length <= 30, `widget label.${language}: "${label}"`);
+      assert.ok(
+        widget.description[language].length <= 100,
+        `widget description.${language} is too long`,
+      );
+    }
   }
 });
 

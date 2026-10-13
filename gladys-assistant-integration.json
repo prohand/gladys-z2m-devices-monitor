@@ -4,7 +4,9 @@
   "name": "Z2M Devices Monitor",
   "description": {
     "en": "Alerts you when a Zigbee2MQTT device stops giving signs of life.",
-    "fr": "Vous alerte quand un appareil Zigbee2MQTT ne donne plus signe de vie."
+    "fr": "Vous alerte quand un appareil Zigbee2MQTT ne donne plus signe de vie.",
+    "de": "Warnt dich, wenn ein Zigbee2MQTT-Gerät keine Lebenszeichen mehr gibt.",
+    "es": "Le avisa cuando un dispositivo Zigbee2MQTT deja de dar señales de vida."
   },
   "version": "2.2.2",
   "docker_image": "ghcr.io/prohand/gladys-z2m-devices-monitor:2.2.2",
@@ -18,18 +20,24 @@
       "type": "section",
       "label": {
         "en": "How it works",
-        "fr": "Comment ça marche"
+        "fr": "Comment ça marche",
+        "de": "So funktioniert es",
+        "es": "Cómo funciona"
       },
       "description": {
         "en": "A Zigbee device that is alive talks. This integration listens to everything Zigbee2MQTT publishes, remembers when each device last spoke, and flags the ones that have been silent for too long. It never uses the battery level: a Zigbee battery percentage is a coarse estimate that often reads 100% right up to the day the sensor stops answering.",
-        "fr": "Un appareil Zigbee vivant parle. Cette intégration écoute tout ce que publie Zigbee2MQTT, mémorise la dernière fois que chaque appareil s'est manifesté, et signale ceux qui se taisent depuis trop longtemps. Elle n'utilise jamais le niveau de batterie : un pourcentage de batterie Zigbee est une estimation grossière, souvent à 100% jusqu'au jour où le capteur cesse de répondre."
+        "fr": "Un appareil Zigbee vivant parle. Cette intégration écoute tout ce que publie Zigbee2MQTT, mémorise la dernière fois que chaque appareil s'est manifesté, et signale ceux qui se taisent depuis trop longtemps. Elle n'utilise jamais le niveau de batterie : un pourcentage de batterie Zigbee est une estimation grossière, souvent à 100% jusqu'au jour où le capteur cesse de répondre.",
+        "de": "Ein lebendiges Zigbee-Gerät spricht. Diese Integration hört alles mit, was Zigbee2MQTT veröffentlicht, merkt sich, wann sich jedes Gerät zuletzt gemeldet hat, und markiert diejenigen, die zu lange stumm sind. Den Batteriestand verwendet sie nie: Eine Zigbee-Batterieanzeige ist eine grobe Schätzung, die oft bis zu dem Tag 100 % anzeigt, an dem der Sensor nicht mehr antwortet.",
+        "es": "Un dispositivo Zigbee vivo habla. Esta integración escucha todo lo que publica Zigbee2MQTT, recuerda cuándo se manifestó cada dispositivo por última vez y señala los que llevan demasiado tiempo en silencio. Nunca utiliza el nivel de batería: el porcentaje de batería de un dispositivo Zigbee es una estimación aproximada que a menudo marca 100 % hasta el día en que el sensor deja de responder."
       },
       "links": [
         {
           "url": "https://www.zigbee2mqtt.io/guide/usage/mqtt_topics_and_messages.html",
           "label": {
             "en": "Zigbee2MQTT MQTT topics",
-            "fr": "Topics MQTT de Zigbee2MQTT"
+            "fr": "Topics MQTT de Zigbee2MQTT",
+            "de": "MQTT-Topics von Zigbee2MQTT",
+            "es": "Topics MQTT de Zigbee2MQTT"
           }
         }
       ]
@@ -39,11 +47,15 @@
       "type": "section",
       "label": {
         "en": "MQTT broker",
-        "fr": "Broker MQTT"
+        "fr": "Broker MQTT",
+        "de": "MQTT-Broker",
+        "es": "Broker MQTT"
       },
       "description": {
         "en": "The same broker Zigbee2MQTT publishes on. The integration only ever subscribes: it never publishes anything to your Zigbee network. These values have to be typed in here: an integration runs in its own sandbox and Gladys never hands it the settings of another integration. If Gladys installed Zigbee2MQTT for you, copy them from the Zigbee2MQTT integration, Setup tab, \"External tools connection\" block — and replace localhost in the URL with the IP address of your Gladys machine.",
-        "fr": "Le même broker que celui utilisé par Zigbee2MQTT. L'intégration ne fait que s'abonner : elle ne publie jamais rien sur votre réseau Zigbee. Ces valeurs doivent être saisies ici : une intégration tourne dans son propre bac à sable et Gladys ne lui communique jamais les réglages d'une autre intégration. Si c'est Gladys qui a installé Zigbee2MQTT, recopiez-les depuis l'intégration Zigbee2MQTT, onglet Configuration, bloc « Connexion pour outils externes » — en remplaçant localhost dans l'URL par l'adresse IP de votre machine Gladys."
+        "fr": "Le même broker que celui utilisé par Zigbee2MQTT. L'intégration ne fait que s'abonner : elle ne publie jamais rien sur votre réseau Zigbee. Ces valeurs doivent être saisies ici : une intégration tourne dans son propre bac à sable et Gladys ne lui communique jamais les réglages d'une autre intégration. Si c'est Gladys qui a installé Zigbee2MQTT, recopiez-les depuis l'intégration Zigbee2MQTT, onglet Configuration, bloc « Connexion pour outils externes » — en remplaçant localhost dans l'URL par l'adresse IP de votre machine Gladys.",
+        "de": "Derselbe Broker, auf dem Zigbee2MQTT veröffentlicht. Die Integration abonniert nur und veröffentlicht nie etwas in deinem Zigbee-Netzwerk. Diese Werte müssen hier eingegeben werden: Eine Integration läuft in ihrer eigenen Sandbox, und Gladys gibt ihr nie die Einstellungen einer anderen Integration weiter. Wenn Gladys Zigbee2MQTT für dich installiert hat, kopiere sie aus der Zigbee2MQTT-Integration, Tab „Einrichtung“, Block „Verbindung für externe Tools“ — und ersetze localhost in der URL durch die IP-Adresse deines Gladys-Rechners.",
+        "es": "El mismo broker en el que publica Zigbee2MQTT. La integración solo se suscribe: nunca publica nada en su red Zigbee. Estos valores deben introducirse aquí: una integración se ejecuta en su propio entorno aislado y Gladys nunca le transmite los ajustes de otra integración. Si Gladys instaló Zigbee2MQTT por usted, cópielos desde la integración Zigbee2MQTT, pestaña «Configuración», bloque «Conexión de herramientas externas», y sustituya localhost en la URL por la dirección IP de su equipo Gladys."
       }
     },
     {
@@ -51,15 +63,21 @@
       "type": "string",
       "label": {
         "en": "Broker URL",
-        "fr": "URL du broker"
+        "fr": "URL du broker",
+        "de": "Broker-URL",
+        "es": "URL del broker"
       },
       "description": {
         "en": "Address of the MQTT broker, e.g. mqtt://192.168.1.10:1883 (mqtts:// and ws:// are supported too). If you leave the scheme out, mqtt:// is assumed.",
-        "fr": "Adresse du broker MQTT, par exemple mqtt://192.168.1.10:1883 (mqtts:// et ws:// sont aussi acceptés). Si vous omettez le schéma, mqtt:// est ajouté."
+        "fr": "Adresse du broker MQTT, par exemple mqtt://192.168.1.10:1883 (mqtts:// et ws:// sont aussi acceptés). Si vous omettez le schéma, mqtt:// est ajouté.",
+        "de": "Adresse des MQTT-Brokers, z. B. mqtt://192.168.1.10:1883 (mqtts:// und ws:// werden ebenfalls unterstützt). Ohne Schema wird mqtt:// angenommen.",
+        "es": "Dirección del broker MQTT, por ejemplo mqtt://192.168.1.10:1883 (también se admiten mqtts:// y ws://). Si omite el esquema, se asume mqtt://."
       },
       "placeholder": {
         "en": "mqtt://192.168.1.10:1883",
-        "fr": "mqtt://192.168.1.10:1883"
+        "fr": "mqtt://192.168.1.10:1883",
+        "de": "mqtt://192.168.1.10:1883",
+        "es": "mqtt://192.168.1.10:1883"
       },
       "required": true,
       "default": "mqtt://localhost:1883"
@@ -69,11 +87,15 @@
       "type": "string",
       "label": {
         "en": "Username",
-        "fr": "Nom d'utilisateur"
+        "fr": "Nom d'utilisateur",
+        "de": "Benutzername",
+        "es": "Nombre de usuario"
       },
       "description": {
         "en": "Leave empty if your broker allows anonymous connections.",
-        "fr": "Laissez vide si votre broker accepte les connexions anonymes."
+        "fr": "Laissez vide si votre broker accepte les connexions anonymes.",
+        "de": "Leer lassen, wenn dein Broker anonyme Verbindungen erlaubt.",
+        "es": "Déjelo vacío si su broker admite conexiones anónimas."
       },
       "required": false,
       "default": ""
@@ -83,7 +105,9 @@
       "type": "secret",
       "label": {
         "en": "Password",
-        "fr": "Mot de passe"
+        "fr": "Mot de passe",
+        "de": "Passwort",
+        "es": "Contraseña"
       },
       "required": false
     },
@@ -92,15 +116,21 @@
       "type": "string",
       "label": {
         "en": "Base topic",
-        "fr": "Topic de base"
+        "fr": "Topic de base",
+        "de": "Basis-Topic",
+        "es": "Topic base"
       },
       "description": {
         "en": "The base topic configured in Zigbee2MQTT (mqtt.base_topic).",
-        "fr": "Le topic de base configuré dans Zigbee2MQTT (mqtt.base_topic)."
+        "fr": "Le topic de base configuré dans Zigbee2MQTT (mqtt.base_topic).",
+        "de": "Das in Zigbee2MQTT konfigurierte Basis-Topic (mqtt.base_topic).",
+        "es": "El topic base configurado en Zigbee2MQTT (mqtt.base_topic)."
       },
       "placeholder": {
         "en": "zigbee2mqtt",
-        "fr": "zigbee2mqtt"
+        "fr": "zigbee2mqtt",
+        "de": "zigbee2mqtt",
+        "es": "zigbee2mqtt"
       },
       "required": true,
       "default": "zigbee2mqtt"
@@ -110,11 +140,15 @@
       "type": "section",
       "label": {
         "en": "TLS (mqtts:// and wss:// only)",
-        "fr": "TLS (mqtts:// et wss:// uniquement)"
+        "fr": "TLS (mqtts:// et wss:// uniquement)",
+        "de": "TLS (nur mqtts:// und wss://)",
+        "es": "TLS (solo mqtts:// y wss://)"
       },
       "description": {
         "en": "Only for a broker reached over TLS. A broker at home usually runs on a self-signed certificate or a private certificate authority, which is refused by default: paste the certificate of that authority (or the broker's own self-signed certificate) below, in PEM format. Turning the verification off also works, but then any machine on your network can pretend to be your broker.",
-        "fr": "Uniquement pour un broker joint en TLS. Un broker domestique utilise le plus souvent un certificat auto-signé ou une autorité de certification privée, refusés par défaut : collez ci-dessous le certificat de cette autorité (ou le certificat auto-signé du broker), au format PEM. Désactiver la vérification fonctionne aussi, mais n'importe quelle machine de votre réseau peut alors se faire passer pour votre broker."
+        "fr": "Uniquement pour un broker joint en TLS. Un broker domestique utilise le plus souvent un certificat auto-signé ou une autorité de certification privée, refusés par défaut : collez ci-dessous le certificat de cette autorité (ou le certificat auto-signé du broker), au format PEM. Désactiver la vérification fonctionne aussi, mais n'importe quelle machine de votre réseau peut alors se faire passer pour votre broker.",
+        "de": "Nur für einen per TLS erreichten Broker. Ein Broker zu Hause verwendet meist ein selbstsigniertes Zertifikat oder eine private Zertifizierungsstelle, die standardmäßig abgelehnt werden: Füge unten das Zertifikat dieser Stelle (oder das selbstsignierte Zertifikat des Brokers) im PEM-Format ein. Die Überprüfung abzuschalten funktioniert auch, aber dann kann sich jeder Rechner in deinem Netzwerk als dein Broker ausgeben.",
+        "es": "Solo para un broker al que se accede mediante TLS. Un broker doméstico suele usar un certificado autofirmado o una autoridad de certificación privada, que se rechazan por defecto: pegue abajo el certificado de esa autoridad (o el certificado autofirmado del propio broker) en formato PEM. Desactivar la verificación también funciona, pero entonces cualquier equipo de su red puede hacerse pasar por su broker."
       }
     },
     {
@@ -122,15 +156,21 @@
       "type": "string",
       "label": {
         "en": "CA certificate (PEM)",
-        "fr": "Certificat de l'autorité (PEM)"
+        "fr": "Certificat de l'autorité (PEM)",
+        "de": "CA-Zertifikat (PEM)",
+        "es": "Certificado de la CA (PEM)"
       },
       "description": {
         "en": "The whole text, from -----BEGIN CERTIFICATE----- to -----END CERTIFICATE-----. Pasting it on a single line is fine. Leave empty for a certificate signed by a public authority.",
-        "fr": "Le texte complet, de -----BEGIN CERTIFICATE----- à -----END CERTIFICATE-----. Le coller sur une seule ligne convient. Laissez vide pour un certificat signé par une autorité publique."
+        "fr": "Le texte complet, de -----BEGIN CERTIFICATE----- à -----END CERTIFICATE-----. Le coller sur une seule ligne convient. Laissez vide pour un certificat signé par une autorité publique.",
+        "de": "Der gesamte Text, von -----BEGIN CERTIFICATE----- bis -----END CERTIFICATE-----. Er darf in einer einzigen Zeile eingefügt werden. Leer lassen bei einem Zertifikat einer öffentlichen Zertifizierungsstelle.",
+        "es": "El texto completo, de -----BEGIN CERTIFICATE----- a -----END CERTIFICATE-----. Puede pegarlo en una sola línea. Déjelo vacío para un certificado firmado por una autoridad pública."
       },
       "placeholder": {
         "en": "-----BEGIN CERTIFICATE----- …",
-        "fr": "-----BEGIN CERTIFICATE----- …"
+        "fr": "-----BEGIN CERTIFICATE----- …",
+        "de": "-----BEGIN CERTIFICATE----- …",
+        "es": "-----BEGIN CERTIFICATE----- …"
       },
       "required": false,
       "default": ""
@@ -140,11 +180,15 @@
       "type": "boolean",
       "label": {
         "en": "Verify the broker certificate",
-        "fr": "Vérifier le certificat du broker"
+        "fr": "Vérifier le certificat du broker",
+        "de": "Zertifikat des Brokers überprüfen",
+        "es": "Verificar el certificado del broker"
       },
       "description": {
         "en": "Keep it on. Off accepts any certificate, including an attacker's.",
-        "fr": "Laissez-la activée. Désactivée, n'importe quel certificat est accepté, y compris celui d'un attaquant."
+        "fr": "Laissez-la activée. Désactivée, n'importe quel certificat est accepté, y compris celui d'un attaquant.",
+        "de": "Eingeschaltet lassen. Ausgeschaltet wird jedes Zertifikat akzeptiert, auch das eines Angreifers.",
+        "es": "Manténgala activada. Desactivada, se acepta cualquier certificado, incluido el de un atacante."
       },
       "required": false,
       "default": true
@@ -154,11 +198,15 @@
       "type": "section",
       "label": {
         "en": "Silence thresholds",
-        "fr": "Seuils de silence"
+        "fr": "Seuils de silence",
+        "de": "Schwellenwerte für Funkstille",
+        "es": "Umbrales de silencio"
       },
       "description": {
         "en": "A device is declared dead once it has been silent for longer than its threshold. Battery sensors report far less often than mains-powered devices, hence two separate defaults. Start generous: it is better to be alerted a few hours late than to be woken up by a false alarm.",
-        "fr": "Un appareil est déclaré mort dès qu'il se tait depuis plus longtemps que son seuil. Les capteurs sur pile parlent bien moins souvent que les appareils sur secteur, d'où deux valeurs par défaut distinctes. Commencez large : mieux vaut être alerté quelques heures trop tard que réveillé par une fausse alerte."
+        "fr": "Un appareil est déclaré mort dès qu'il se tait depuis plus longtemps que son seuil. Les capteurs sur pile parlent bien moins souvent que les appareils sur secteur, d'où deux valeurs par défaut distinctes. Commencez large : mieux vaut être alerté quelques heures trop tard que réveillé par une fausse alerte.",
+        "de": "Ein Gerät gilt als tot, sobald es länger als sein Schwellenwert stumm ist. Batteriesensoren melden sich viel seltener als netzbetriebene Geräte, daher zwei getrennte Standardwerte. Beginne großzügig: Lieber ein paar Stunden zu spät gewarnt als von einem Fehlalarm geweckt werden.",
+        "es": "Un dispositivo se declara muerto en cuanto lleva en silencio más tiempo que su umbral. Los sensores a pilas informan con mucha menos frecuencia que los dispositivos conectados a la red eléctrica, de ahí dos valores por defecto distintos. Empiece con holgura: es mejor recibir la alerta unas horas tarde que despertarse por una falsa alarma."
       }
     },
     {
@@ -166,11 +214,15 @@
       "type": "number",
       "label": {
         "en": "Threshold for mains-powered devices (min)",
-        "fr": "Seuil pour les appareils sur secteur (min)"
+        "fr": "Seuil pour les appareils sur secteur (min)",
+        "de": "Schwellenwert für netzbetriebene Geräte (min)",
+        "es": "Umbral para dispositivos conectados a la red (min)"
       },
       "description": {
         "en": "Applies to plugs, bulbs and routers, which report often.",
-        "fr": "S'applique aux prises, ampoules et routeurs, qui parlent souvent."
+        "fr": "S'applique aux prises, ampoules et routeurs, qui parlent souvent.",
+        "de": "Gilt für Steckdosen, Lampen und Router, die sich häufig melden.",
+        "es": "Se aplica a enchufes, bombillas y routers, que informan a menudo."
       },
       "required": false,
       "default": 120,
@@ -182,11 +234,15 @@
       "type": "number",
       "label": {
         "en": "Threshold for battery devices (min)",
-        "fr": "Seuil pour les appareils sur pile (min)"
+        "fr": "Seuil pour les appareils sur pile (min)",
+        "de": "Schwellenwert für batteriebetriebene Geräte (min)",
+        "es": "Umbral para dispositivos a pilas (min)"
       },
       "description": {
         "en": "Applies to battery sensors, which sleep most of the time. 1440 minutes is 24 hours.",
-        "fr": "S'applique aux capteurs sur pile, qui dorment la plupart du temps. 1440 minutes valent 24 heures."
+        "fr": "S'applique aux capteurs sur pile, qui dorment la plupart du temps. 1440 minutes valent 24 heures.",
+        "de": "Gilt für Batteriesensoren, die die meiste Zeit schlafen. 1440 Minuten sind 24 Stunden.",
+        "es": "Se aplica a los sensores a pilas, que duermen la mayor parte del tiempo. 1440 minutos son 24 horas."
       },
       "required": false,
       "default": 1440,
@@ -198,15 +254,21 @@
       "type": "string",
       "label": {
         "en": "Per-device thresholds",
-        "fr": "Seuils par appareil"
+        "fr": "Seuils par appareil",
+        "de": "Schwellenwerte pro Gerät",
+        "es": "Umbrales por dispositivo"
       },
       "description": {
         "en": "One device=minutes pair per line or separated by commas. The device is designated by its Zigbee2MQTT friendly name or its IEEE address. Example: mailbox sensor=4320, 0x00158d0001abcdef=60",
-        "fr": "Une paire appareil=minutes par ligne ou séparées par des virgules. L'appareil est désigné par son nom convivial Zigbee2MQTT ou son adresse IEEE. Exemple : capteur boite aux lettres=4320, 0x00158d0001abcdef=60"
+        "fr": "Une paire appareil=minutes par ligne ou séparées par des virgules. L'appareil est désigné par son nom convivial Zigbee2MQTT ou son adresse IEEE. Exemple : capteur boite aux lettres=4320, 0x00158d0001abcdef=60",
+        "de": "Ein Paar Gerät=Minuten pro Zeile oder durch Kommas getrennt. Das Gerät wird über seinen Zigbee2MQTT-Anzeigenamen (friendly name) oder seine IEEE-Adresse angegeben. Beispiel: Briefkastensensor=4320, 0x00158d0001abcdef=60",
+        "es": "Un par dispositivo=minutos por línea o separados por comas. El dispositivo se designa por su nombre descriptivo (friendly name) de Zigbee2MQTT o por su dirección IEEE. Ejemplo: sensor buzón=4320, 0x00158d0001abcdef=60"
       },
       "placeholder": {
         "en": "mailbox sensor=4320, garage motion=180",
-        "fr": "capteur boite aux lettres=4320, mouvement garage=180"
+        "fr": "capteur boite aux lettres=4320, mouvement garage=180",
+        "de": "Briefkastensensor=4320, Bewegung Garage=180",
+        "es": "sensor buzón=4320, movimiento garaje=180"
       },
       "required": false,
       "default": ""
@@ -216,11 +278,15 @@
       "type": "section",
       "label": {
         "en": "Device naming",
-        "fr": "Nommage des appareils"
+        "fr": "Nommage des appareils",
+        "de": "Benennung der Geräte",
+        "es": "Nombre de los dispositivos"
       },
       "description": {
         "en": "Gladys most likely already knows these devices under their Zigbee2MQTT name, through its own Zigbee2MQTT integration. Without a suffix, a scene picker shows the same name twice with no way to tell which is which.",
-        "fr": "Gladys connaît très probablement déjà ces appareils sous leur nom Zigbee2MQTT, via sa propre intégration Zigbee2MQTT. Sans suffixe, un sélecteur de scène affiche deux fois le même nom sans moyen de les distinguer."
+        "fr": "Gladys connaît très probablement déjà ces appareils sous leur nom Zigbee2MQTT, via sa propre intégration Zigbee2MQTT. Sans suffixe, un sélecteur de scène affiche deux fois le même nom sans moyen de les distinguer.",
+        "de": "Gladys kennt diese Geräte höchstwahrscheinlich bereits unter ihrem Zigbee2MQTT-Namen, über die eigene Zigbee2MQTT-Integration. Ohne Suffix zeigt eine Szenenauswahl denselben Namen zweimal an, ohne dass man die beiden unterscheiden kann.",
+        "es": "Lo más probable es que Gladys ya conozca estos dispositivos por su nombre de Zigbee2MQTT, a través de su propia integración Zigbee2MQTT. Sin sufijo, un selector de escena muestra dos veces el mismo nombre sin forma de distinguirlos."
       }
     },
     {
@@ -228,15 +294,21 @@
       "type": "string",
       "label": {
         "en": "Suffix added to device names",
-        "fr": "Suffixe ajouté aux noms d'appareils"
+        "fr": "Suffixe ajouté aux noms d'appareils",
+        "de": "An Gerätenamen angehängtes Suffix",
+        "es": "Sufijo añadido a los nombres de dispositivo"
       },
       "description": {
         "en": "Appended to the Zigbee2MQTT name of each watched device, e.g. \"office plug (monitor)\". Leave empty to keep the raw name. Only affects the devices you create afterwards: Gladys never renames a device you already added.",
-        "fr": "Ajouté au nom Zigbee2MQTT de chaque appareil surveillé, par exemple « prise bureau (monitor) ». Laissez vide pour garder le nom brut. N'affecte que les appareils créés ensuite : Gladys ne renomme jamais un appareil déjà ajouté."
+        "fr": "Ajouté au nom Zigbee2MQTT de chaque appareil surveillé, par exemple « prise bureau (monitor) ». Laissez vide pour garder le nom brut. N'affecte que les appareils créés ensuite : Gladys ne renomme jamais un appareil déjà ajouté.",
+        "de": "Wird an den Zigbee2MQTT-Namen jedes überwachten Geräts angehängt, z. B. „Steckdose Büro (monitor)“. Leer lassen, um den unveränderten Namen zu behalten. Betrifft nur die danach erstellten Geräte: Gladys benennt ein bereits hinzugefügtes Gerät nie um.",
+        "es": "Se añade al nombre de Zigbee2MQTT de cada dispositivo vigilado, por ejemplo «enchufe despacho (monitor)». Déjelo vacío para conservar el nombre sin cambios. Solo afecta a los dispositivos que cree después: Gladys nunca renombra un dispositivo ya añadido."
       },
       "placeholder": {
         "en": "(monitor)",
-        "fr": "(monitor)"
+        "fr": "(monitor)",
+        "de": "(monitor)",
+        "es": "(monitor)"
       },
       "required": false,
       "default": "(monitor)"
@@ -246,11 +318,15 @@
       "type": "section",
       "label": {
         "en": "Zigbee2MQTT monitor device",
-        "fr": "Appareil Zigbee2MQTT monitor"
+        "fr": "Appareil Zigbee2MQTT monitor",
+        "de": "Gerät „Zigbee2MQTT monitor“",
+        "es": "Dispositivo «Zigbee2MQTT monitor»"
       },
       "description": {
         "en": "The single device summarizing the whole network: how many devices are watched, how many are silent, and the names of the silent ones — the text a scene notification quotes. It is the one to build your alert on: its counters cover every device Zigbee2MQTT knows about, including the ones you pair later.",
-        "fr": "L'appareil unique qui résume tout le réseau : combien d'appareils sont surveillés, combien sont silencieux, et le nom de ceux qui se taisent — le texte qu'une notification de scène reprend. C'est sur lui qu'il faut bâtir l'alerte : ses compteurs couvrent tous les appareils connus de Zigbee2MQTT, y compris ceux que vous appairerez plus tard."
+        "fr": "L'appareil unique qui résume tout le réseau : combien d'appareils sont surveillés, combien sont silencieux, et le nom de ceux qui se taisent — le texte qu'une notification de scène reprend. C'est sur lui qu'il faut bâtir l'alerte : ses compteurs couvrent tous les appareils connus de Zigbee2MQTT, y compris ceux que vous appairerez plus tard.",
+        "de": "Das eine Gerät, das das ganze Netzwerk zusammenfasst: wie viele Geräte überwacht werden, wie viele stumm sind, und die Namen der stummen — der Text, den eine Szenenbenachrichtigung zitiert. Auf ihm solltest du deine Warnung aufbauen: Seine Zähler umfassen alle Geräte, die Zigbee2MQTT kennt, auch die, die du später koppelst.",
+        "es": "El dispositivo único que resume toda la red: cuántos dispositivos se vigilan, cuántos están en silencio y los nombres de los que callan, el texto que cita una notificación de escena. Es sobre él donde debe construir su alerta: sus contadores cubren todos los dispositivos que conoce Zigbee2MQTT, incluidos los que vincule más adelante."
       }
     },
     {
@@ -258,15 +334,21 @@
       "type": "string",
       "label": {
         "en": "Text shown when no device is silent",
-        "fr": "Texte affiché quand aucun appareil n'est silencieux"
+        "fr": "Texte affiché quand aucun appareil n'est silencieux",
+        "de": "Angezeigter Text, wenn kein Gerät stumm ist",
+        "es": "Texto mostrado cuando ningún dispositivo está en silencio"
       },
       "description": {
         "en": "What the \"Silent device names\" feature reads while the whole network is answering. Write it in your own language; empty restores the default.",
-        "fr": "Ce qu'affiche la fonctionnalité « Silent device names » tant que tout le réseau répond. Écrivez-le dans votre langue ; vide rétablit la valeur par défaut."
+        "fr": "Ce qu'affiche la fonctionnalité « Silent device names » tant que tout le réseau répond. Écrivez-le dans votre langue ; vide rétablit la valeur par défaut.",
+        "de": "Der Text, den die Funktion „Silent device names“ anzeigt, solange das ganze Netzwerk antwortet. Schreibe ihn in deiner Sprache; leer stellt den Standardwert wieder her.",
+        "es": "Lo que muestra la función «Silent device names» mientras toda la red responde. Escríbalo en su idioma; vacío restablece el valor por defecto."
       },
       "placeholder": {
         "en": "No silent device",
-        "fr": "Aucun appareil silencieux"
+        "fr": "Aucun appareil silencieux",
+        "de": "Kein stummes Gerät",
+        "es": "Ningún dispositivo en silencio"
       },
       "required": false,
       "default": "No silent device"
@@ -276,7 +358,9 @@
       "type": "section",
       "label": {
         "en": "Advanced",
-        "fr": "Avancé"
+        "fr": "Avancé",
+        "de": "Erweitert",
+        "es": "Avanzado"
       }
     },
     {
@@ -284,11 +368,15 @@
       "type": "string",
       "label": {
         "en": "Devices to ignore",
-        "fr": "Appareils à ignorer"
+        "fr": "Appareils à ignorer",
+        "de": "Zu ignorierende Geräte",
+        "es": "Dispositivos que ignorar"
       },
       "description": {
         "en": "Friendly names or IEEE addresses, separated by commas. Ignored devices are not published to Gladys and never raise an alert.",
-        "fr": "Noms conviviaux ou adresses IEEE, séparés par des virgules. Les appareils ignorés ne sont pas publiés vers Gladys et ne déclenchent jamais d'alerte."
+        "fr": "Noms conviviaux ou adresses IEEE, séparés par des virgules. Les appareils ignorés ne sont pas publiés vers Gladys et ne déclenchent jamais d'alerte.",
+        "de": "Anzeigenamen oder IEEE-Adressen, durch Kommas getrennt. Ignorierte Geräte werden nicht an Gladys veröffentlicht und lösen nie eine Warnung aus.",
+        "es": "Nombres descriptivos o direcciones IEEE, separados por comas. Los dispositivos ignorados no se publican en Gladys y nunca generan una alerta."
       },
       "required": false,
       "default": ""
@@ -298,11 +386,15 @@
       "type": "boolean",
       "label": {
         "en": "Also watch devices disabled in Zigbee2MQTT",
-        "fr": "Surveiller aussi les appareils désactivés dans Zigbee2MQTT"
+        "fr": "Surveiller aussi les appareils désactivés dans Zigbee2MQTT",
+        "de": "Auch in Zigbee2MQTT deaktivierte Geräte überwachen",
+        "es": "Vigilar también los dispositivos desactivados en Zigbee2MQTT"
       },
       "description": {
         "en": "Off by default: a device you disabled on purpose is expected to be silent.",
-        "fr": "Désactivé par défaut : un appareil que vous avez désactivé volontairement est censé se taire."
+        "fr": "Désactivé par défaut : un appareil que vous avez désactivé volontairement est censé se taire.",
+        "de": "Standardmäßig aus: Ein absichtlich deaktiviertes Gerät soll ja stumm sein.",
+        "es": "Desactivado por defecto: se espera que un dispositivo que usted desactivó a propósito esté en silencio."
       },
       "required": false,
       "default": false
@@ -312,11 +404,15 @@
       "type": "number",
       "label": {
         "en": "Check interval (s)",
-        "fr": "Intervalle de vérification (s)"
+        "fr": "Intervalle de vérification (s)",
+        "de": "Prüfintervall (s)",
+        "es": "Intervalo de comprobación (s)"
       },
       "description": {
         "en": "How often the silence of every device is re-evaluated.",
-        "fr": "Fréquence de réévaluation du silence de chaque appareil."
+        "fr": "Fréquence de réévaluation du silence de chaque appareil.",
+        "de": "Wie oft die Funkstille jedes Geräts neu bewertet wird.",
+        "es": "Con qué frecuencia se reevalúa el silencio de cada dispositivo."
       },
       "required": false,
       "default": 60,
@@ -329,7 +425,9 @@
       "key": "test_connection",
       "label": {
         "en": "Test the MQTT connection",
-        "fr": "Tester la connexion MQTT"
+        "fr": "Tester la connexion MQTT",
+        "de": "MQTT-Verbindung testen",
+        "es": "Probar la conexión MQTT"
       },
       "timeout_seconds": 15
     },
@@ -337,7 +435,9 @@
       "key": "list_silent_devices",
       "label": {
         "en": "List the silent devices",
-        "fr": "Lister les appareils silencieux"
+        "fr": "Lister les appareils silencieux",
+        "de": "Stumme Geräte auflisten",
+        "es": "Listar los dispositivos en silencio"
       },
       "timeout_seconds": 15
     },
@@ -345,7 +445,9 @@
       "key": "refresh_devices",
       "label": {
         "en": "Refresh the device list",
-        "fr": "Rafraîchir la liste des appareils"
+        "fr": "Rafraîchir la liste des appareils",
+        "de": "Geräteliste aktualisieren",
+        "es": "Actualizar la lista de dispositivos"
       },
       "timeout_seconds": 30
     }
@@ -355,11 +457,15 @@
       "key": "network_health",
       "label": {
         "en": "Zigbee health",
-        "fr": "Santé Zigbee"
+        "fr": "Santé Zigbee",
+        "de": "Zigbee-Zustand",
+        "es": "Salud Zigbee"
       },
       "description": {
         "en": "Silent Zigbee2MQTT devices, since when, and the bridge state.",
-        "fr": "Les appareils Zigbee2MQTT silencieux, depuis quand, et l'état du bridge."
+        "fr": "Les appareils Zigbee2MQTT silencieux, depuis quand, et l'état du bridge.",
+        "de": "Stumme Zigbee2MQTT-Geräte, seit wann, und der Zustand der Bridge.",
+        "es": "Dispositivos Zigbee2MQTT en silencio, desde cuándo, y el estado del bridge."
       },
       "icon": "activity",
       "settings": [
@@ -368,28 +474,36 @@
           "type": "select",
           "label": {
             "en": "Devices shown",
-            "fr": "Appareils affichés"
+            "fr": "Appareils affichés",
+            "de": "Angezeigte Geräte",
+            "es": "Dispositivos mostrados"
           },
           "options": [
             {
               "value": "all",
               "label": {
                 "en": "All devices",
-                "fr": "Tous les appareils"
+                "fr": "Tous les appareils",
+                "de": "Alle Geräte",
+                "es": "Todos los dispositivos"
               }
             },
             {
               "value": "battery",
               "label": {
                 "en": "Battery devices only",
-                "fr": "Appareils sur pile uniquement"
+                "fr": "Appareils sur pile uniquement",
+                "de": "Nur batteriebetriebene Geräte",
+                "es": "Solo dispositivos a pilas"
               }
             },
             {
               "value": "mains",
               "label": {
                 "en": "Mains-powered devices only",
-                "fr": "Appareils sur secteur uniquement"
+                "fr": "Appareils sur secteur uniquement",
+                "de": "Nur netzbetriebene Geräte",
+                "es": "Solo dispositivos conectados a la red"
               }
             }
           ],
@@ -404,11 +518,15 @@
       "key": "device_silent",
       "label": {
         "en": "A Zigbee device went silent",
-        "fr": "Un appareil Zigbee devient silencieux"
+        "fr": "Un appareil Zigbee devient silencieux",
+        "de": "Ein Zigbee-Gerät ist verstummt",
+        "es": "Un dispositivo Zigbee se ha quedado en silencio"
       },
       "description": {
         "en": "Fires once per device, the moment it passes its silence threshold.",
-        "fr": "Se déclenche une fois par appareil, dès qu'il dépasse son seuil de silence."
+        "fr": "Se déclenche une fois par appareil, dès qu'il dépasse son seuil de silence.",
+        "de": "Löst einmal pro Gerät aus, sobald es seinen Schwellenwert für Funkstille überschreitet.",
+        "es": "Se activa una vez por dispositivo, en cuanto supera su umbral de silencio."
       },
       "fields": [
         {
@@ -417,11 +535,15 @@
           "source": "devices",
           "label": {
             "en": "Device",
-            "fr": "Appareil"
+            "fr": "Appareil",
+            "de": "Gerät",
+            "es": "Dispositivo"
           },
           "description": {
             "en": "Leave empty to react to any watched device.",
-            "fr": "Laissez vide pour réagir à n'importe quel appareil surveillé."
+            "fr": "Laissez vide pour réagir à n'importe quel appareil surveillé.",
+            "de": "Leer lassen, um auf jedes überwachte Gerät zu reagieren.",
+            "es": "Déjelo vacío para reaccionar ante cualquier dispositivo vigilado."
           },
           "required": false
         },
@@ -430,25 +552,33 @@
           "type": "select",
           "label": {
             "en": "Power source",
-            "fr": "Alimentation"
+            "fr": "Alimentation",
+            "de": "Stromversorgung",
+            "es": "Alimentación"
           },
           "description": {
             "en": "Leave empty for both.",
-            "fr": "Laissez vide pour les deux."
+            "fr": "Laissez vide pour les deux.",
+            "de": "Leer lassen für beide.",
+            "es": "Déjelo vacío para ambas."
           },
           "options": [
             {
               "value": "battery",
               "label": {
                 "en": "Battery",
-                "fr": "Pile"
+                "fr": "Pile",
+                "de": "Batterie",
+                "es": "Pilas"
               }
             },
             {
               "value": "mains",
               "label": {
                 "en": "Mains",
-                "fr": "Secteur"
+                "fr": "Secteur",
+                "de": "Netz",
+                "es": "Red eléctrica"
               }
             }
           ],
@@ -461,7 +591,9 @@
           "type": "string",
           "label": {
             "en": "Device name (Zigbee2MQTT)",
-            "fr": "Nom de l'appareil (Zigbee2MQTT)"
+            "fr": "Nom de l'appareil (Zigbee2MQTT)",
+            "de": "Gerätename (Zigbee2MQTT)",
+            "es": "Nombre del dispositivo (Zigbee2MQTT)"
           }
         },
         {
@@ -469,7 +601,9 @@
           "type": "number",
           "label": {
             "en": "Silent for (min)",
-            "fr": "Silencieux depuis (min)"
+            "fr": "Silencieux depuis (min)",
+            "de": "Stumm seit (min)",
+            "es": "En silencio desde hace (min)"
           }
         },
         {
@@ -477,7 +611,9 @@
           "type": "string",
           "label": {
             "en": "IEEE address",
-            "fr": "Adresse IEEE"
+            "fr": "Adresse IEEE",
+            "de": "IEEE-Adresse",
+            "es": "Dirección IEEE"
           }
         },
         {
@@ -485,7 +621,9 @@
           "type": "string",
           "label": {
             "en": "Power source (battery or mains)",
-            "fr": "Alimentation (battery ou mains)"
+            "fr": "Alimentation (battery ou mains)",
+            "de": "Stromversorgung (battery oder mains)",
+            "es": "Alimentación (battery o mains)"
           }
         },
         {
@@ -493,7 +631,9 @@
           "type": "number",
           "label": {
             "en": "Silence threshold (min)",
-            "fr": "Seuil de silence (min)"
+            "fr": "Seuil de silence (min)",
+            "de": "Schwellenwert für Funkstille (min)",
+            "es": "Umbral de silencio (min)"
           }
         }
       ]
@@ -502,11 +642,15 @@
       "key": "device_back",
       "label": {
         "en": "A Zigbee device is back",
-        "fr": "Un appareil Zigbee redonne signe de vie"
+        "fr": "Un appareil Zigbee redonne signe de vie",
+        "de": "Ein Zigbee-Gerät meldet sich zurück",
+        "es": "Un dispositivo Zigbee vuelve a dar señales de vida"
       },
       "description": {
         "en": "Fires once per device, when a device reported silent speaks again.",
-        "fr": "Se déclenche une fois par appareil, quand un appareil signalé silencieux se manifeste à nouveau."
+        "fr": "Se déclenche une fois par appareil, quand un appareil signalé silencieux se manifeste à nouveau.",
+        "de": "Löst einmal pro Gerät aus, wenn sich ein als stumm gemeldetes Gerät wieder meldet.",
+        "es": "Se activa una vez por dispositivo, cuando un dispositivo señalado en silencio vuelve a manifestarse."
       },
       "fields": [
         {
@@ -515,11 +659,15 @@
           "source": "devices",
           "label": {
             "en": "Device",
-            "fr": "Appareil"
+            "fr": "Appareil",
+            "de": "Gerät",
+            "es": "Dispositivo"
           },
           "description": {
             "en": "Leave empty to react to any watched device.",
-            "fr": "Laissez vide pour réagir à n'importe quel appareil surveillé."
+            "fr": "Laissez vide pour réagir à n'importe quel appareil surveillé.",
+            "de": "Leer lassen, um auf jedes überwachte Gerät zu reagieren.",
+            "es": "Déjelo vacío para reaccionar ante cualquier dispositivo vigilado."
           },
           "required": false
         },
@@ -528,25 +676,33 @@
           "type": "select",
           "label": {
             "en": "Power source",
-            "fr": "Alimentation"
+            "fr": "Alimentation",
+            "de": "Stromversorgung",
+            "es": "Alimentación"
           },
           "description": {
             "en": "Leave empty for both.",
-            "fr": "Laissez vide pour les deux."
+            "fr": "Laissez vide pour les deux.",
+            "de": "Leer lassen für beide.",
+            "es": "Déjelo vacío para ambas."
           },
           "options": [
             {
               "value": "battery",
               "label": {
                 "en": "Battery",
-                "fr": "Pile"
+                "fr": "Pile",
+                "de": "Batterie",
+                "es": "Pilas"
               }
             },
             {
               "value": "mains",
               "label": {
                 "en": "Mains",
-                "fr": "Secteur"
+                "fr": "Secteur",
+                "de": "Netz",
+                "es": "Red eléctrica"
               }
             }
           ],
@@ -559,7 +715,9 @@
           "type": "string",
           "label": {
             "en": "Device name (Zigbee2MQTT)",
-            "fr": "Nom de l'appareil (Zigbee2MQTT)"
+            "fr": "Nom de l'appareil (Zigbee2MQTT)",
+            "de": "Gerätename (Zigbee2MQTT)",
+            "es": "Nombre del dispositivo (Zigbee2MQTT)"
           }
         },
         {
@@ -567,7 +725,9 @@
           "type": "string",
           "label": {
             "en": "IEEE address",
-            "fr": "Adresse IEEE"
+            "fr": "Adresse IEEE",
+            "de": "IEEE-Adresse",
+            "es": "Dirección IEEE"
           }
         },
         {
@@ -575,7 +735,9 @@
           "type": "string",
           "label": {
             "en": "Power source (battery or mains)",
-            "fr": "Alimentation (battery ou mains)"
+            "fr": "Alimentation (battery ou mains)",
+            "de": "Stromversorgung (battery oder mains)",
+            "es": "Alimentación (battery o mains)"
           }
         },
         {
@@ -583,7 +745,9 @@
           "type": "number",
           "label": {
             "en": "Silence threshold (min)",
-            "fr": "Seuil de silence (min)"
+            "fr": "Seuil de silence (min)",
+            "de": "Schwellenwert für Funkstille (min)",
+            "es": "Umbral de silencio (min)"
           }
         }
       ]
@@ -594,11 +758,15 @@
       "key": "get_silent_devices",
       "label": {
         "en": "Get the silent Zigbee devices",
-        "fr": "Récupérer les appareils Zigbee silencieux"
+        "fr": "Récupérer les appareils Zigbee silencieux",
+        "de": "Stumme Zigbee-Geräte abrufen",
+        "es": "Obtener los dispositivos Zigbee en silencio"
       },
       "description": {
         "en": "How many devices are silent right now, and their names.",
-        "fr": "Combien d'appareils sont silencieux en ce moment, et leurs noms."
+        "fr": "Combien d'appareils sont silencieux en ce moment, et leurs noms.",
+        "de": "Wie viele Geräte gerade stumm sind, und ihre Namen.",
+        "es": "Cuántos dispositivos están en silencio ahora mismo, y sus nombres."
       },
       "timeout_seconds": 10,
       "fields": [
@@ -607,28 +775,36 @@
           "type": "select",
           "label": {
             "en": "Power source",
-            "fr": "Alimentation"
+            "fr": "Alimentation",
+            "de": "Stromversorgung",
+            "es": "Alimentación"
           },
           "options": [
             {
               "value": "all",
               "label": {
                 "en": "All devices",
-                "fr": "Tous les appareils"
+                "fr": "Tous les appareils",
+                "de": "Alle Geräte",
+                "es": "Todos los dispositivos"
               }
             },
             {
               "value": "battery",
               "label": {
                 "en": "Battery",
-                "fr": "Pile"
+                "fr": "Pile",
+                "de": "Batterie",
+                "es": "Pilas"
               }
             },
             {
               "value": "mains",
               "label": {
                 "en": "Mains",
-                "fr": "Secteur"
+                "fr": "Secteur",
+                "de": "Netz",
+                "es": "Red eléctrica"
               }
             }
           ],
@@ -642,7 +818,9 @@
           "type": "number",
           "label": {
             "en": "Number of silent devices",
-            "fr": "Nombre d'appareils silencieux"
+            "fr": "Nombre d'appareils silencieux",
+            "de": "Anzahl stummer Geräte",
+            "es": "Número de dispositivos en silencio"
           }
         },
         {
@@ -650,7 +828,9 @@
           "type": "string",
           "label": {
             "en": "Names of the silent devices",
-            "fr": "Noms des appareils silencieux"
+            "fr": "Noms des appareils silencieux",
+            "de": "Namen der stummen Geräte",
+            "es": "Nombres de los dispositivos en silencio"
           }
         },
         {
@@ -658,7 +838,9 @@
           "type": "number",
           "label": {
             "en": "Number of watched devices",
-            "fr": "Nombre d'appareils surveillés"
+            "fr": "Nombre d'appareils surveillés",
+            "de": "Anzahl überwachter Geräte",
+            "es": "Número de dispositivos vigilados"
           }
         }
       ]
@@ -667,11 +849,15 @@
       "key": "get_device_status",
       "label": {
         "en": "Check a Zigbee device",
-        "fr": "Vérifier un appareil Zigbee"
+        "fr": "Vérifier un appareil Zigbee",
+        "de": "Ein Zigbee-Gerät prüfen",
+        "es": "Comprobar un dispositivo Zigbee"
       },
       "description": {
         "en": "Whether one device still gives signs of life, and since when it is silent.",
-        "fr": "Si un appareil donne encore signe de vie, et depuis quand il se tait."
+        "fr": "Si un appareil donne encore signe de vie, et depuis quand il se tait.",
+        "de": "Ob ein Gerät noch Lebenszeichen gibt, und seit wann es stumm ist.",
+        "es": "Si un dispositivo sigue dando señales de vida, y desde cuándo está en silencio."
       },
       "timeout_seconds": 10,
       "fields": [
@@ -681,11 +867,15 @@
           "source": "devices",
           "label": {
             "en": "Device",
-            "fr": "Appareil"
+            "fr": "Appareil",
+            "de": "Gerät",
+            "es": "Dispositivo"
           },
           "description": {
             "en": "One of the watched devices you added to Gladys.",
-            "fr": "Un des appareils surveillés que vous avez ajoutés à Gladys."
+            "fr": "Un des appareils surveillés que vous avez ajoutés à Gladys.",
+            "de": "Eines der überwachten Geräte, die du zu Gladys hinzugefügt hast.",
+            "es": "Uno de los dispositivos vigilados que ha añadido a Gladys."
           },
           "required": true
         }
@@ -696,7 +886,9 @@
           "type": "boolean",
           "label": {
             "en": "Alive",
-            "fr": "En vie"
+            "fr": "En vie",
+            "de": "Lebendig",
+            "es": "Vivo"
           }
         },
         {
@@ -704,7 +896,9 @@
           "type": "string",
           "label": {
             "en": "Device name (Zigbee2MQTT)",
-            "fr": "Nom de l'appareil (Zigbee2MQTT)"
+            "fr": "Nom de l'appareil (Zigbee2MQTT)",
+            "de": "Gerätename (Zigbee2MQTT)",
+            "es": "Nombre del dispositivo (Zigbee2MQTT)"
           }
         },
         {
@@ -712,7 +906,9 @@
           "type": "number",
           "label": {
             "en": "Silent for (min)",
-            "fr": "Silencieux depuis (min)"
+            "fr": "Silencieux depuis (min)",
+            "de": "Stumm seit (min)",
+            "es": "En silencio desde hace (min)"
           }
         },
         {
@@ -720,7 +916,9 @@
           "type": "number",
           "label": {
             "en": "Silence threshold (min)",
-            "fr": "Seuil de silence (min)"
+            "fr": "Seuil de silence (min)",
+            "de": "Schwellenwert für Funkstille (min)",
+            "es": "Umbral de silencio (min)"
           }
         }
       ]

@@ -22,7 +22,9 @@ test('an unreachable broker is reported with its address and the reason', () => 
   });
   assert.equal(status.connected, false);
   assert.match(status.message.en, /mqtt:\/\/broker:1883 \(connect ECONNREFUSED\)/);
-  assert.ok(status.message.fr);
+  for (const language of ['fr', 'de', 'es']) {
+    assert.match(status.message[language], /mqtt:\/\/broker:1883 \(connect ECONNREFUSED\)/);
+  }
 });
 
 test('a missing MQTT connection reads as unreachable, not as connected', () => {
@@ -108,7 +110,8 @@ test('the status never shows the credentials of the broker URL', () => {
     mqttStartedAt: START,
     now: START,
   });
-  assert.doesNotMatch(status.message.en, /s3cret/);
-  assert.doesNotMatch(status.message.fr, /s3cret/);
+  for (const text of Object.values(status.message)) {
+    assert.doesNotMatch(text, /s3cret/);
+  }
   assert.match(status.message.en, /mqtt:\/\/\*\*\*@broker:1883/);
 });

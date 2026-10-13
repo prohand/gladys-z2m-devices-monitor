@@ -202,7 +202,7 @@ image. It's kept in sync with the code by `test/manifest.test.js`, which will fa
 - add a config field without a matching key in `DEFAULT_CONFIG` (`src/config.js`), or let a `default`
   drift from it;
 - give a `section` field a `default`/`required`/`placeholder`, or leak its key into `DEFAULT_CONFIG`;
-- leave any user-facing string without both `en` and `fr`;
+- leave any user-facing string without `en`, `fr`, `de` and `es`;
 - declare more than three `categories`, or lower `gladys_version` below `>=4.86.0` while `categories`
   is declared — a core older than 4.86.0 rejects any manifest field it does not know, so the
   integration would fail to install instead of being filtered out of the catalog;
@@ -223,9 +223,10 @@ rebuilds), `mqtt_reject_unauthorized` a boolean defaulting to `true`; both go th
 `buildConnectOptions` and `sameBrokerConfig`. The broker URL may carry `user:pass@`: it is only ever
 logged or displayed through `redactBrokerUrl`.
 
-Every user-facing string in the code (action results, connection statuses) is likewise `{en, fr}`.
-User documentation lives in `docs/en.md` and `docs/fr.md` — both mandatory, re-hosted by Gladys, and
-kept in sync with each other.
+Every user-facing string in the code (action results, connection statuses, widget texts) is likewise
+`{ en, fr, de, es }` (`LANGUAGES` in `src/format.js`).
+User documentation lives in `docs/en.md`, `docs/fr.md`, `docs/de.md` and `docs/es.md` — re-hosted by
+Gladys (`en` and `fr` mandatory for the store) — and they stay in sync with each other.
 
 Do **not** hand-edit `version` or `docker_image`: the Release workflow (Actions → Release → run,
 pick patch/minor/major) bumps `package.json`, the manifest and the image tag together, then builds

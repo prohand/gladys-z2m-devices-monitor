@@ -39,6 +39,8 @@ test('test_connection explains WHY the broker is unreachable', () => {
   assert.match(message.en, /Not connected/);
   assert.match(message.en, /ECONNREFUSED/);
   assert.match(message.fr, /Non connecté/);
+  assert.match(message.de, /Nicht verbunden/);
+  assert.match(message.es, /No conectado/);
   assert.equal(reconnected, true, 'the click also retries');
 });
 
@@ -77,6 +79,8 @@ test('list_silent_devices names the devices to go and check', () => {
   assert.match(message.en, /office plug/);
   assert.match(message.en, /3 h 5 min/);
   assert.match(message.fr, /appareil\(s\) silencieux/);
+  assert.match(message.de, /stumme\(s\) Gerät\(e\): office plug \(3 h 5 min\)/);
+  assert.match(message.es, /dispositivo\(s\) en silencio: office plug \(3 h 5 min\)/);
 });
 
 test('list_silent_devices flags a device that never said anything', () => {
@@ -85,6 +89,8 @@ test('list_silent_devices flags a device that never said anything', () => {
   const message = listSilentDevices({ monitor });
   assert.match(message.en, /never seen/);
   assert.match(message.fr, /jamais vu/);
+  assert.match(message.de, /nie gesehen/);
+  assert.match(message.es, /nunca visto/);
 });
 
 test('list_silent_devices confirms when everything is fine', () => {
@@ -128,7 +134,7 @@ test('test_connection never quotes the credentials of the broker URL', () => {
     }),
   ];
   for (const answer of answers) {
-    for (const text of [answer.en, answer.fr]) {
+    for (const text of [answer.en, answer.fr, answer.de, answer.es]) {
       assert.doesNotMatch(text, /s3cret|gladys:/);
       assert.match(text, /mqtt:\/\/\*\*\*@broker:1883/);
     }
