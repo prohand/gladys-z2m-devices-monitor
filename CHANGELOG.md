@@ -6,6 +6,8 @@ All notable changes to this integration are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-13
+
 ### Added
 
 - German and Spanish translations (configuration screen, messages, widget, scene blocks, documentation).
@@ -115,7 +117,8 @@ First public release.
 - Give a device its value the moment the user creates it
 - Say what the monitor really shows, and stop duplicating the LQI
 
-[Unreleased]: https://github.com/prohand/gladys-z2m-devices-monitor/compare/v2.2.2...HEAD
+[Unreleased]: https://github.com/prohand/gladys-z2m-devices-monitor/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/prohand/gladys-z2m-devices-monitor/compare/v2.2.2...v2.3.0
 [2.2.2]: https://github.com/prohand/gladys-z2m-devices-monitor/compare/v2.2.1...v2.2.2
 [2.2.1]: https://github.com/prohand/gladys-z2m-devices-monitor/compare/v2.2.0...v2.2.1
 [2.2.0]: https://github.com/prohand/gladys-z2m-devices-monitor/compare/v2.1.0...v2.2.0

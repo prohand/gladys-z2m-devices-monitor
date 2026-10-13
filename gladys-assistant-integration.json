@@ -8,8 +8,8 @@
     "de": "Warnt dich, wenn ein Zigbee2MQTT-Gerät keine Lebenszeichen mehr gibt.",
     "es": "Le avisa cuando un dispositivo Zigbee2MQTT deja de dar señales de vida."
   },
-  "version": "2.2.2",
-  "docker_image": "ghcr.io/prohand/gladys-z2m-devices-monitor:2.2.2",
+  "version": "2.3.0",
+  "docker_image": "ghcr.io/prohand/gladys-z2m-devices-monitor:2.3.0",
   "gladys_version": ">=5.1.0",
   "cover_image": "https://raw.githubusercontent.com/prohand/gladys-z2m-devices-monitor/main/cover.jpg",
   "categories": ["network"],
