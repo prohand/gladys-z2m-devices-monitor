@@ -6,6 +6,13 @@ All notable changes to this integration are documented here. The format follows
 
 ## [Unreleased]
 
+### Security
+
+- `mqtt` 5.16.1, and `ip-address` 10.7.4 (used through `mqtt`): fixes a
+  denial of service on a long IPv6 zone identifier (GHSA-rxp7-6hxx-x8q5, moderate).
+- Docker base image: `node:24-alpine` digest moved to Node 24.22.1, the
+  security release of 2026-10-20 (it was Node 24.21.0).
+
 ## [2.3.0] - 2026-10-13
 
 ### Added
