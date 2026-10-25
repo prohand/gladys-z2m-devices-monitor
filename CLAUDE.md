@@ -207,7 +207,10 @@ image. It's kept in sync with the code by `test/manifest.test.js`, which will fa
   is declared — a core older than 4.86.0 rejects any manifest field it does not know, so the
   integration would fail to install instead of being filtered out of the catalog;
 - lower `gladys_version` below `>=5.1.0` while `widgets` / `scene_triggers` / `scene_actions` are
-  declared (same reason, one release later);
+  declared (same reason, one release later), or below `>=5.3.0` (the floor today) while `keywords`
+  / `countries` / `music` are;
+- name a category outside the store vocabulary (which gained `transport`, `vehicles`, `servers`
+  and `leisure` in 2026-10), or break the `keywords` shape (1–10 unique strings of 2–30 characters);
 - let the widget, trigger or action keys drift from `WIDGET` / `SCENE_TRIGGER` / `SCENE_ACTION`, or
   a trigger field/variable be missing from the event data, or an action's outputs differ from what
   its handler returns.

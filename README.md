@@ -10,9 +10,9 @@ and the [`@gladysassistant/integration-sdk`](https://github.com/GladysAssistant/
 > User documentation: [English](docs/en.md) · [Français](docs/fr.md) · [Deutsch](docs/de.md) ·
 > [Español](docs/es.md)
 >
-> Requires **Gladys ≥ 5.1.0**: the manifest declares a dashboard widget and scene
-> blocks (and its catalog category, `network`), fields older cores reject
-> outright.
+> Requires **Gladys ≥ 5.3.0**: the manifest declares a dashboard widget and scene
+> blocks (5.1.0), catalog search keywords (5.3.0) and its catalog category,
+> `network`, fields older cores reject outright.
 
 ## Why
 

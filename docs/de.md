@@ -45,7 +45,7 @@ Erforderlich ist sie nicht.
 
 ### 1. Voraussetzungen
 
-- Gladys **5.1.0 oder neuer** (Widget und Szenenblöcke);
+- Gladys **5.3.0 oder neuer** (Widget, Szenenblöcke und Suchbegriffe des Katalogs);
 - ein laufendes Zigbee2MQTT, das auf einem MQTT-Broker veröffentlicht;
 - dieser Broker muss von Gladys aus erreichbar sein (gleiches lokales Netzwerk).
 

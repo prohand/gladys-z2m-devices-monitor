@@ -6,6 +6,16 @@ All notable changes to this integration are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Search keywords in the Gladys catalog (zigbee, mqtt, watchdog, last seen,
+  offline...).
+
+### Changed
+
+- Gladys 5.3.0 or later is now required.
+- Gladys integration SDK 0.16.
+
 ## [2.3.1] - 2026-10-23
 
 ### Security

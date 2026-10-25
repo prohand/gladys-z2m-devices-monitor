@@ -44,7 +44,8 @@ obligatoire.
 
 ### 1. Pré-requis
 
-- Gladys **5.1.0 ou plus récent** (widget et blocs de scène) ;
+- Gladys **5.3.0 ou plus récent** (widget, blocs de scène et mots-clés de recherche du
+  catalogue) ;
 - Zigbee2MQTT en fonctionnement, publiant sur un broker MQTT ;
 - ce broker doit être joignable depuis Gladys (même réseau local).
 
