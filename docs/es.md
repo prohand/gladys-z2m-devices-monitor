@@ -43,7 +43,8 @@ _retained_. No es obligatoria.
 
 ### 1. Requisitos
 
-- Gladys **5.1.0 o posterior** (widget y bloques de escena);
+- Gladys **5.3.0 o posterior** (widget, bloques de escena y palabras clave de búsqueda del
+  catálogo);
 - Zigbee2MQTT en funcionamiento y publicando en un broker MQTT;
 - ese broker accesible desde Gladys (misma red local).
 

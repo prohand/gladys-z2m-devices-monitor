@@ -43,7 +43,7 @@ required.
 
 ### 1. Requirements
 
-- Gladys **5.1.0 or later** (widget and scene blocks);
+- Gladys **5.3.0 or later** (widget, scene blocks and catalog search keywords);
 - Zigbee2MQTT running and publishing to an MQTT broker;
 - that broker reachable from Gladys (same local network).
 

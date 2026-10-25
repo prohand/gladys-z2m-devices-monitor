@@ -90,6 +90,69 @@ test('declaring widgets and scene blocks requires Gladys >= 5.1.0', () => {
   );
 });
 
+// And again in 5.3.0: `keywords`, `countries` and `music`.
+test('declaring keywords, countries or music requires Gladys >= 5.3.0', () => {
+  if (!['keywords', 'countries', 'music'].some((key) => manifest[key] !== undefined)) {
+    return;
+  }
+  const [major, minor] = minimumGladysVersion();
+  assert.ok(
+    major > 5 || (major === 5 && minor >= 3),
+    `keywords, countries and music require gladys_version >= 5.3.0, got "${manifest.gladys_version}"`,
+  );
+});
+
+// The store vocabulary of the catalog shelves (2026-10: transport, vehicles,
+// servers and leisure added). An unknown key is dropped by the indexer with a
+// mere warning: a typo would silently cost the shelf.
+const CATEGORIES = [
+  'climate',
+  'lighting',
+  'energy',
+  'security',
+  'multimedia',
+  'appliances',
+  'environment',
+  'protocols',
+  'network',
+  'notifications',
+  'assistants',
+  'services',
+  'transport',
+  'vehicles',
+  'servers',
+  'leisure',
+];
+
+test('every category is a unique key of the store vocabulary', () => {
+  assert.equal(new Set(manifest.categories).size, manifest.categories.length);
+  for (const category of manifest.categories) {
+    assert.ok(CATEGORIES.includes(category), `unknown category "${category}"`);
+  }
+});
+
+test('the search keywords are 1 to 10 unique strings of 2 to 30 characters', () => {
+  const { keywords } = manifest;
+  assert.ok(Array.isArray(keywords) && keywords.length >= 1 && keywords.length <= 10);
+  const normalized = keywords.map((keyword) => keyword.trim().toLowerCase());
+  assert.equal(new Set(normalized).size, keywords.length, 'duplicate keyword');
+  for (const keyword of normalized) {
+    assert.ok(keyword.length >= 2 && keyword.length <= 30, `keyword "${keyword}"`);
+  }
+});
+
+test('countries, when declared, are 1 to 20 unique ISO 3166-1 alpha-2 codes', () => {
+  // Zigbee2MQTT runs anywhere: no `countries`, the catalog shows it worldwide.
+  if (manifest.countries === undefined) {
+    return;
+  }
+  assert.ok(manifest.countries.length >= 1 && manifest.countries.length <= 20);
+  assert.equal(new Set(manifest.countries).size, manifest.countries.length);
+  for (const country of manifest.countries) {
+    assert.match(country, /^[A-Z]{2}$/);
+  }
+});
+
 // --- Widgets and scene blocks ------------------------------------------------
 // The keys are stored by the dashboards and by the user's scenes: the code and
 // the manifest drifting apart is a widget that never loads, an event the core
